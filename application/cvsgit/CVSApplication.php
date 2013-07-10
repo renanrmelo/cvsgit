@@ -31,12 +31,6 @@ class CVSApplication extends Application {
     $this->sDiretorioObjetos = $aConfiguracoes['sDiretorioObjetos'] . '/' . ltrim('.cvsgit/objects/', '/');
 
     /**
-     * Acentos
-     * - Remover acentos das mensagens de commit 
-     */
-    $this->lRemoverAcentos = $aConfiguracoes['lRemoverAcentos'] ? true : false;
-
-    /**
      * Nome do repositorio
      */
     if ( file_exists('CVS/Repository') ) {

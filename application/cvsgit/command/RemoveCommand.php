@@ -30,7 +30,7 @@ class RemoveCommand extends Command {
 
     foreach( $aArquivosInformados as $sArquivo ) {
 
-      if ( empty($aArquivos[$sArquivo]) ) {
+      if ( empty($aArquivos[$sArquivo]) && empty($aArquivos[getcwd() . '/' . $sArquivo]) ) {
 
         $oOutput->writeln("<error>Arquivo não encontrado na lista: $sArquivo</error>");
         continue;

@@ -15,7 +15,7 @@ return array(
    * Acentos
    * - Remover acentos das mensagens de commit 
    */
-  'lRemoverAcentos' => true,
+  'lRemoverAcentos' => false,
 
   /**
    * Senha do root, usado no no comando cvsgit pull 
