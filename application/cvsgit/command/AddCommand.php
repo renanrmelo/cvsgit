@@ -21,8 +21,9 @@ class AddCommand extends Command {
 
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para commit');
 
-    $this->addOption('message', 'm', InputOption::VALUE_REQUIRED, 'Mensagem de log' );
-    $this->addOption('tag',     't', InputOption::VALUE_REQUIRED, 'Tag' );
+    $this->addOption('message',     'm', InputOption::VALUE_REQUIRED, 'Mensagem de log' );
+    $this->addOption('tag',         't', InputOption::VALUE_REQUIRED, 'Tag' );
+    $this->addOption('tag-release', 'r', InputOption::VALUE_REQUIRED, 'Tag da release' );
 
     $this->addOption('added',    'a', InputOption::VALUE_NONE, 'Tipo de commit: Adicionar arquivo' );
     $this->addOption('enhanced', 'e', InputOption::VALUE_NONE, 'Tipo de commit: Melhoria' );
@@ -47,10 +48,14 @@ class AddCommand extends Command {
   public function processaArgumentos() {
 
     $aArquivos = array();
+    
+    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
+    $this->oConfig = new \Config($sArquivo);
 
     $oParametros = new \StdClass();
     $oParametros->sMensagem      = null;
     $oParametros->iTag           = null;
+    $oParametros->iTagRelease    = $this->oConfig->get('tag')->release;
     $oParametros->sTipoAbreviado = null;
     $oParametros->sTipoCompleto  = null;
     $oParametros->sArquivo       = null;
@@ -75,6 +80,13 @@ class AddCommand extends Command {
          */
         case 'tag' :
           $oParametros->iTag = ltrim( strtoupper($this->oInput->getOption('tag')), 'T' );
+        break;
+
+        /**
+         * Tag do commit 
+         */
+        case 'tag-release' :
+          $oParametros->iTagRelease = ltrim( strtoupper($this->oInput->getOption('tag-release')), 'T' );
         break;
 
         /**

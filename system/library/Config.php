@@ -38,6 +38,13 @@ class Config {
 
   }
 
+  /**
+   * Retorna uma ou todas as configuracoes
+   *
+   * @param mixed $sConfig
+   * @access public
+   * @return void
+   */
   public function get($sConfig = null) {
 
     if ( !empty($sConfig) && isset($this->oConfig->$sConfig) ) {
@@ -47,6 +54,8 @@ class Config {
     if ( empty($sConfig) ) {
       return $this->oConfig;
     }
+
+    return null;
   }
 
   /**

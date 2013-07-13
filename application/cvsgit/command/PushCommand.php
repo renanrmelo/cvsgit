@@ -8,6 +8,8 @@ use Symfony\Component\Console\Input\InputOption;
 
 class PushCommand extends Command {
 
+  private $oConfig;
+
   public function configure() {
 
     $this->setName('push');
@@ -18,6 +20,9 @@ class PushCommand extends Command {
   public function execute($oInput, $oOutput) {
 
     $aArquivos = $this->getApplication()->getArquivos();
+
+    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
+    $this->oConfig = new \Config($sArquivo);
 
     if ( empty($aArquivos) ) {
 
@@ -31,6 +36,8 @@ class PushCommand extends Command {
     $aComandos = array();
     $iErros  = 0;
 
+    $aTagSprint = $this->getTagsSprint();
+
     /**
      * Percorre arquivos validando configuracoes do commit
      */
@@ -41,30 +48,45 @@ class PushCommand extends Command {
       $sMensagem     = $oCommit->sMensagem;
       $sTipoCompleto = $oCommit->sTipoCompleto;
       $sErro         = '<error>[x]</error>';
+      $aMensagemErro = array();
 
       /**
        * @todo, se arquivo nao existir usar cvs status para saber se deve deixar arquivo 
        */
       if ( !file_exists($oCommit->sArquivo) ) {
 
-        $sArquivo = $sErro . $sArquivo;
+        $sArquivo = $sErro . ' ' . $sArquivo;
+        $aMensagemErro[$sArquivo][] = "Arquivo não existe";
         $iErros++;
       }
 
       if ( empty($oCommit->sMensagem) ) {
 
+        $aMensagemErro[$sArquivo][] = "Mensagem não informada";
         $sMensagem = $sErro;
         $iErros++;
       }
 
-      if ( empty($oCommit->iTag) || mb_strlen($oCommit->iTag) < 4 ) {
+      if ( empty($oCommit->iTag) ) {
 
-        $iTag = $sErro;
+        $aMensagemErro[$sArquivo][] = "Tag não informada";
+        $iTag = $sErro . $oCommit->iTag;
         $iErros++;
+      }
+
+      if ( !empty($aTagSprint) && !in_array($oCommit->iTag, $aTagSprint) ) {
+
+        $iTag = $sErro . ' ' .$oCommit->iTag;
+        $aMensagemErro[$sArquivo][] = $oCommit->iTag . ": Tag não é do spring";
+
+        if ( $this->oConfig->get('tag')->bloquearPush ) {
+          $iErros++;
+        }
       }
 
       if ( empty($oCommit->sTipoAbreviado) || empty($oCommit->sTipoCompleto) ) {
 
+        $aMensagemErro[$sArquivo][] = "Tipo de commit não informado";
         $sTipoCompleto = $sErro;
         $iErros++;
       }
@@ -80,6 +102,13 @@ class PushCommand extends Command {
     if ( $iErros > 0 ) {
 
       $oOutput->writeln("\n " . $iErros . " erro(s) encontrado(s):");
+
+      foreach ( $aMensagemErro as $sArquivo => $aMensagemArquivo ) {
+
+        $oOutput->writeln("\n -- " . $sArquivo);
+        $oOutput->writeln("    " . implode("\n", $aMensagemArquivo));
+      } 
+
       $oOutput->writeln($oTabela->render());
       return 1;
     }
@@ -96,14 +125,34 @@ class PushCommand extends Command {
         $oOutput->writeln("-- <comment>$sArquivoCommit:</comment>");
 
         if ( $oCommit->sTipoAbreviado == 'ADD' ) {
-          $oOutput->writeln("   " . "cvs add " . $sArquivoCommit);
+          $oOutput->writeln("   " . $this->addArquivo($oCommit));
         }
 
-        $oOutput->writeln(\Encode::toUTF8("   cvs commit -m '$oCommit->sTipoAbreviado: $sMensagemCommit ($oCommit->sTipoCompleto #$oCommit->iTag)' " . $sArquivoCommit));
-        $oOutput->writeln(\Encode::toUTF8("   cvs tag -F T{$oCommit->iTag} " . $sArquivoCommit));
+        $oOutput->writeln('   ' . $this->commitArquivo($oCommit));
+        $oOutput->writeln('   ' . $this->tagArquivo($oCommit));
         $oOutput->writeln('');
       }
 
+    }
+
+    if ( !empty($aMensagemErro) ) {
+
+      foreach ( $aMensagemErro as $sArquivo => $aMensagemArquivo ) {
+
+        $oOutput->writeln("-- <comment>" . $sArquivo . "</comment>");
+        $oOutput->writeln("   " . implode("\n", $aMensagemArquivo));
+      } 
+
+      $oOutput->writeln("");
+    }
+
+    $iTagRelease = $this->oConfig->get('tag')->release;
+
+    if ( !empty($iTagRelease) ) {
+
+      $oOutput->writeln("-- <comment>Tag release</comment>");
+      $oOutput->writeln("   " . $iTagRelease);
+      $oOutput->writeln("");
     }
 
     $oDialog   = $this->getHelperSet()->get('dialog');
@@ -120,14 +169,9 @@ class PushCommand extends Command {
 
       foreach($aCommits as $oCommit) {
 
-        $sMensagemCommit = $oCommit->sMensagem;
-        $sMensagemCommit = "$oCommit->sTipoAbreviado: $sMensagemCommit ($oCommit->sTipoCompleto #$oCommit->iTag)";
-        $sMensagemCommit = str_replace("'", '"', $sMensagemCommit);
-        $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
-
-        $sComandoAdd    = \Encode::toUTF8("cvs add " . $sArquivoCommit . " 2> /tmp/cvsgit_last_error");
-        $sComandoCommit = \Encode::toUTF8("cvs commit -m '" . $sMensagemCommit . "' " . $sArquivoCommit . " 2> /tmp/cvsgit_last_error");
-        $sComandoTag    = \Encode::toUTF8("cvs tag -F T{$oCommit->iTag} " . $sArquivoCommit . " 2> /tmp/cvsgit_last_error");
+        $sComandoAdd    = $this->addArquivo($oCommit)    . " 2> /tmp/cvsgit_last_error";
+        $sComandoCommit = $this->commitArquivo($oCommit) . " 2> /tmp/cvsgit_last_error";
+        $sComandoTag    = $this->tagArquivo($oCommit)    . " 2> /tmp/cvsgit_last_error";
 
         if ( $oCommit->sTipoAbreviado == 'ADD' ) {
 
@@ -170,6 +214,64 @@ class PushCommand extends Command {
     }
 
     $oOutput->writeln('');
+  }
+
+  private function tagArquivo($oCommit) {
+
+    $iTag = $oCommit->iTag; 
+
+    if ( !empty($oCommit->iTagRelease) ) {
+      $iTag = $oCommit->iTagRelease; 
+    } 
+
+    if ( empty($oCommit->iTagRelease) ) {
+
+      $iTagRelease = $this->oConfig->get('tag')->release; 
+
+      if ( !empty($iTagRelease) ) {
+        $iTag = $iTagRelease;
+      }
+    }
+
+    $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
+    return \Encode::toUTF8("cvs tag -F T{$iTag} " . $sArquivoCommit);
+  }
+
+  private function addArquivo($oCommit) {
+
+    $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
+    return "cvs add " . $sArquivoCommit;
+  }
+
+  private function commitArquivo($oCommit) {
+
+    $sMensagemCommit = $oCommit->sMensagem;
+    $sMensagemCommit = "$oCommit->sTipoAbreviado: $sMensagemCommit ($oCommit->sTipoCompleto #$oCommit->iTag)";
+    $sMensagemCommit = str_replace("'", '"', $sMensagemCommit);
+    $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
+    return \Encode::toUTF8("cvs commit -m '$sMensagemCommit' " . $sArquivoCommit);
+  }
+
+  private function getTagsSprint() {
+
+    $tagsSprint = $this->oConfig->get('tag')->sprint;
+    $aTagSprint = array();
+
+    if ( is_array($tagsSprint) ) {
+      $aTagSprint = tagsSprint;
+    }
+
+    if ( is_object($tagsSprint) ) {
+
+      foreach ( $tagsSprint as $sTag => $sDescricao ) {
+
+        if ( !empty($sDescricao) ) {
+          $aTagSprint[] = $sTag;
+        }
+      }
+    }
+
+    return $aTagSprint;
   }
 
 }

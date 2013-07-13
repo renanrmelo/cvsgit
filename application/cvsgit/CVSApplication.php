@@ -37,6 +37,10 @@ class CVSApplication extends Application {
     $this->sDiretorioObjetos = rtrim($oConfig->get('diretorioArquivosPrograma'), '/') . '/' . ltrim('.cvsgit/objects/', '/');
   }
 
+  public function getDiretorioObjetos() {
+    return $this->sDiretorioObjetos;
+  }
+
   public function getProjeto() {
 
     if ( !file_exists($this->sDiretorioObjetos . 'Objects') ) {

@@ -452,10 +452,16 @@ class StatusCommand extends Command {
       if ( $lTabela ) {
 
         $oTabelaCommit = new \Table();
-        $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Mensagem', 'Tipo'));
+        $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Tag Release', 'Mensagem', 'Tipo'));
 
         foreach ($aArquivos as $oCommit) {
-          $oTabelaCommit->addRow(array($this->getApplication()->clearPath($oCommit->sArquivo), $oCommit->iTag, $oCommit->sMensagem, $oCommit->sTipoCompleto));
+          $oTabelaCommit->addRow(array(
+            $this->getApplication()->clearPath($oCommit->sArquivo),
+            $oCommit->iTag,
+            $oCommit->iTagRelease,
+            $oCommit->sMensagem,
+            $oCommit->sTipoCompleto
+          ));
         }
 
         if ( !empty($aArquivos) ) {
@@ -468,16 +474,7 @@ class StatusCommand extends Command {
       if ( !$lTabela) {
 
         foreach ($aArquivos as $oCommit) {
-
           $sListaArquivos .= "\n " . $this->getApplication()->clearPath($oCommit->sArquivo) . " ";
-
-          if ( !empty($oCommit->iTag) ) {
-            $sListaArquivos .= "#$oCommit->iTag ";
-          }
-
-          if ( !empty($oCommit->sTipoAbreviado) ) {
-            $sListaArquivos .= $oCommit->sTipoAbreviado;
-          }
         }
 
         if ( !empty($sListaArquivos) ) {

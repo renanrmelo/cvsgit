@@ -12,23 +12,7 @@
    */
   "login" : "dbjeferson.belmiro",
   "senha" : "halegria",
-
-  /**
-   * ------------------------------------------
-   * Binario diff
-   * ------------------------------------------
-   * marcara para executar binario para diff
-   */
-  "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'color jellybeans | map <F4> :qa<CR>'",
-
-  /**
-   * -------------------------------------------
-   * Output
-   * -------------------------------------------
-   * Codificacao de saida para o terminal
-   */
-  "encodeOutput" : "utf-8",
-
+  
   /**
    * -------------------------------------------
    * Tags
@@ -40,14 +24,15 @@
     /**
      * tag para usar em todos os commits
      */
-    "release" : 75655,
+    "release" : "75965",
 
     /**
      * Tags do sprint atual, usada no comentario do commit
      */
     "sprint" : {
-      "65870" : "Tributario - Desconto manual",
-      "65649" : "Folha - Calculo de férias"
+      "65870" : "Folha      - Calculo de férias",
+      "74565" : "Tributario - Cadastro de paralisação",
+      "78233" : "Tributario - Logradouros"
     },
 
     /**
@@ -70,6 +55,22 @@
     "debug.php",
     "debugcli.php"
   ],
+
+  /**
+   * -------------------------------------------
+   * Output
+   * -------------------------------------------
+   * Codificacao de saida para o terminal
+   */
+  "encodeOutput" : "utf-8",
+
+  /**
+   * ------------------------------------------
+   * Binario diff
+   * ------------------------------------------
+   * marcara para executar binario para diff
+   */
+  "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'color jellybeans | map <F4> :qa<CR>'",
 
   /**
    * -------------------------------------------
