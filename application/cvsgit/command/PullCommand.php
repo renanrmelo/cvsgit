@@ -29,12 +29,15 @@ class PullCommand extends Command {
 
     $oOutput->writeln(str_repeat(' ', \Shell::columns()) . "\r" . "Atualizações baixados");
 
-    $aConfig = require dirname(__DIR__) . "/config.php";
 
     $sComandoRoot = '';
 
-    if ( !empty($aConfig['sRootPassword']) ) {
-      $sComandoRoot = "echo '{$aConfig['sRootPassword']}' | sudo -S ";
+    if ( file_exists(dirname(__DIR__) . "/config.php") ) {
+
+      $aConfig = require dirname(__DIR__) . "/config.php";
+      if ( !empty($aConfig['sRootPassword']) ) {
+        $sComandoRoot = "echo '{$aConfig['sRootPassword']}' | sudo -S ";
+      }
     }
 
     exec($sComandoRoot . 'chmod 777 -R ' . getcwd() . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoPermissoes, $iStatusComandoPermissoes);

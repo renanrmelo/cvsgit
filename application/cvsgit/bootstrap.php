@@ -10,16 +10,41 @@ require_once APPLICATION_DIR . 'cvsgit/command/RemoveCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/StatusCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/DiffCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/LogCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/command/ConfigCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/command/HistoryCommand.php';
 
 use CVS\CVSApplication as CVS;
 
-$cvs = new CVS();
-$cvs->add( new \CVS\AddCommand() );
-$cvs->add( new \CVS\InitCommand() );
-$cvs->add( new \CVS\PushCommand() );
-$cvs->add( new \CVS\RemoveCommand() );
-$cvs->add( new \CVS\StatusCommand() );
-$cvs->add( new \CVS\PullCommand() );
-$cvs->add( new \CVS\DiffCommand() );
-$cvs->add( new \CVS\LogCommand() );
-$cvs->run();
+try {
+
+  /**
+   * Instancia app e define arquivo de configração
+   */
+  $oCVS = new CVS(new \Config( __DIR__ . '/config.json'));
+
+  /**
+   * Adiciona programas 
+   */
+  $oCVS->addCommands(array(
+    new \CVS\HistoryCommand(),
+    new \CVS\InitCommand(),
+    new \CVS\PushCommand(),
+    new \CVS\AddCommand(),
+    new \CVS\RemoveCommand(),
+    new \CVS\StatusCommand(),
+    new \CVS\PullCommand(),
+    new \CVS\DiffCommand(),
+    new \CVS\LogCommand(),
+    new \CVS\ConfigCommand(),
+  ));
+
+  /**
+   * Executa aplicacao 
+   */
+  $oCVS->run();
+
+} catch(Exception $oErro) {
+
+  $oOutput = new \Symfony\Component\Console\Output\ConsoleOutput();
+  $oOutput->writeln('<error>' . $oErro->getMessage() . '</error>');
+}

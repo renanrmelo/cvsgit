@@ -30,6 +30,7 @@ return Array(
   'Symfony\Component\Console\Command\Command' => '/opt/lampp/htdocs/console/system/console/Command/Command.php',
   'Symfony\Component\Console\Command\HelpCommand' => '/opt/lampp/htdocs/console/system/console/Command/HelpCommand.php',
   'Encode' => '/opt/lampp/htdocs/console/system/library/Encode.php',
+  'Config' => '/opt/lampp/htdocs/console/system/library/Config.php',
   'String' => '/opt/lampp/htdocs/console/system/library/String.php',
   'Log' => '/opt/lampp/htdocs/console/system/library/Log.php',
   'Shell' => '/opt/lampp/htdocs/console/system/library/Shell.php',

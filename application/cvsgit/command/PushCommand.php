@@ -31,6 +31,9 @@ class PushCommand extends Command {
     $aComandos = array();
     $iErros  = 0;
 
+    /**
+     * Percorre arquivos validando configuracoes do commit
+     */
     foreach ( $aArquivos as $oCommit ) {
 
       $sArquivo      = $this->getApplication()->clearPath($oCommit->sArquivo);
@@ -71,11 +74,14 @@ class PushCommand extends Command {
       $aComandos[ $oCommit->sArquivo ][] = $oCommit;
     }
 
+    /**
+     * Encontrou erros 
+     */
     if ( $iErros > 0 ) {
 
       $oOutput->writeln("\n " . $iErros . " erro(s) encontrado(s):");
       $oOutput->writeln($oTabela->render());
-      return;
+      return 1;
     }
 
     $oOutput->writeln('');

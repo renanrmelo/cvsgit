@@ -35,14 +35,13 @@ class InitCommand extends Command {
 
     $aProjetos       = unserialize(file_get_contents($oApplication->sDiretorioObjetos . 'Objects'));
     $sDiretorioAtual = getcwd();
-    $sMensagem = '<info>"%s" inicializado</info>';
 
     /**
      * Diretorio atual ja inicializado 
      */
     if ( in_array($sDiretorioAtual, $aProjetos) ) {
 
-      $oOutput->writeln(sprintf($sMensagem, getcwd()));
+      $oOutput->writeln(sprintf('<info>"%s" já inicializado</info>', getcwd()));
       return true;
     }   
 
@@ -51,7 +50,7 @@ class InitCommand extends Command {
     file_put_contents($oApplication->sDiretorioObjetos . 'Objects', serialize($aProjetos));
 
     if ( file_exists($oApplication->sDiretorioObjetos) ) {
-      $oOutput->writeln(sprintf($sMensagem, getcwd()));
+      $oOutput->writeln(sprintf('<info>"%s" inicializado</info>', getcwd()));
     }
   }
 

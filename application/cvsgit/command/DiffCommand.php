@@ -8,6 +8,12 @@ use Symfony\Component\Console\Input\InputOption;
 
 class DiffCommand extends Command {
 
+  /**
+   * Configura comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('diff');
@@ -21,6 +27,14 @@ class DiffCommand extends Command {
     $this->addArgument('segunda_versao', InputArgument::OPTIONAL, 'Segunda versão para comparação');
   }
 
+  /**
+   * Executa comando diff
+   *
+   * @param OutputInterface $oInput
+   * @param InputInterface $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     if ( empty($this->getApplication()->sProjeto) &&  !file_exists('CVS/Repository') ) {
@@ -52,6 +66,7 @@ class DiffCommand extends Command {
       if ( $iStatusComandoInformacoes > 0 ) {
 
         $oOutput->writeln("<error>Erro ao execurar cvs log -N $sArquivo</error>");
+        $oOutput->writeln("<error>" . $this->getApplication()->getLastError() . "</error>");
         return $iStatusComandoInformacoes;
       }
 
@@ -69,7 +84,6 @@ class DiffCommand extends Command {
       $nPrimeiraVersao = $iVersaoAtual;
     }
 
-    $sDiffBinario         = '/usr/bin/vimdiff';
     $sProjeto             = $this->getApplication()->sProjeto;
     $sDiretorioTemporario = '/tmp/cvs-diff/';
     $sSeparador           = '__';
@@ -97,6 +111,7 @@ class DiffCommand extends Command {
     if ( $iStatusCheckout > 0 || !file_exists("$sProjeto/$sArquivo") ) {
 
       $oOutput->writeln('<error>Erro ao executar checkout da versão "' . $nPrimeiraVersao . '"</error>');
+      $oOutput->writeln("<error>" . $this->getApplication()->getLastError() . "</error>");
       return $iStatusCheckout;
     }
 
@@ -130,7 +145,7 @@ class DiffCommand extends Command {
       }
 
       exec($sComandoMoverProjeto);
-      pcntl_exec( $sDiffBinario, array($sArquivo, $sArquivoPrimeiraVersao) );
+      $this->binario($sArquivo, $sArquivoPrimeiraVersao);
       return 1;
     }
 
@@ -141,7 +156,8 @@ class DiffCommand extends Command {
 
     if ( $iStatusCheckout > 0 || !file_exists("$sProjeto/$sArquivo") ) {
 
-      $oOutput->writeln('</error>Erro ao executar checkout da versão "' . $nSegundaVersao . '"</error>');
+      $oOutput->writeln('<error>Erro ao executar checkout da versão "' . $nSegundaVersao . '"</error>');
+      $oOutput->writeln("<error>" . $this->getApplication()->getLastError() . "</error>");
       exec($sComandoMoverProjeto);
       return 1;
     }
@@ -170,7 +186,50 @@ class DiffCommand extends Command {
     }
 
     exec($sComandoMoverProjeto);
-    pcntl_exec( $sDiffBinario, array($sArquivoPrimeiraVersao, $sArquivoSegundaVersao) );
+    $this->binario($sArquivoPrimeiraVersao, $sArquivoSegundaVersao);
+  }
+
+  /**
+   * Executa binario passando 2 arquivos para fazer o diff
+   *
+   * @param strign $sArquivoPrimeiraVersao
+   * @param strign $sArquivoSegundaVersao
+   * @access private
+   * @return void
+   */
+  private function binario($sArquivoPrimeiraVersao, $sArquivoSegundaVersao) {
+
+    $aParametrosDiff = array();
+    $sMascaraBinario = $this->getApplication()->getConfig('mascaraBinarioDiff');
+
+    if ( empty($sMascaraBinario) ) {
+      throw new \Exception("Mascara para binario do diff não encontrado, verifique arquivo de configuração");
+    }
+
+    $aParametrosMascara = \String::tokenize($sMascaraBinario);
+    $sBinario           = array_shift($aParametrosMascara);
+
+    if ( empty($sBinario) ) {
+      throw new \Exception("Arquivo binário para diff não encontrado");
+    }
+
+    /**
+     * Percorre os parametros e inclui arquivos para diff 
+     */
+    foreach ($aParametrosMascara as $sParametro) {
+
+      if ( $sParametro == '[arquivo_1]' ) {
+        $sParametro = $sArquivoPrimeiraVersao;
+      }
+
+      if ( $sParametro == '[arquivo_2]' ) {
+        $sParametro = $sArquivoSegundaVersao;
+      }
+      
+      $aParametrosDiff[] = $sParametro;
+    }
+
+    pcntl_exec($sBinario, $aParametrosDiff);
   }
 
 }

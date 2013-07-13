@@ -172,25 +172,11 @@ class LogCommand extends Command {
 
     if ( $iColunas > \Shell::columns() ) {
 
-      $this->less($sOutput);
+      $this->getApplication()->less($sOutput);
       return;
     }
 
     $oOutput->writeln($sOutput);
-  }
-
-  /**
-   * Less
-   * - Exibe saida para terminal com comando "less"
-   *
-   * @param string $sOutput
-   * @access public
-   * @return void
-   */
-  private function less($sOutput) {
-
-    file_put_contents('/tmp/cvsgit_less_output', $sOutput);
-    pcntl_exec('/bin/less', array('/tmp/cvsgit_less_output'));
   }
 
 }

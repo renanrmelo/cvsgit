@@ -21,8 +21,9 @@ class AddCommand extends Command {
 
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para commit');
 
-    $this->addOption('message',  'm', InputOption::VALUE_NONE, 'Mensagem de log' );
-    $this->addOption('tag',      't', InputOption::VALUE_NONE, 'Tag' );
+    $this->addOption('message', 'm', InputOption::VALUE_REQUIRED, 'Mensagem de log' );
+    $this->addOption('tag',     't', InputOption::VALUE_REQUIRED, 'Tag' );
+
     $this->addOption('added',    'a', InputOption::VALUE_NONE, 'Tipo de commit: Adicionar arquivo' );
     $this->addOption('enhanced', 'e', InputOption::VALUE_NONE, 'Tipo de commit: Melhoria' );
     $this->addOption('fixed',    'f', InputOption::VALUE_NONE, 'Tipo de commit: Correção de bug' );
@@ -66,31 +67,14 @@ class AddCommand extends Command {
          * Mensagem do commit 
          */
         case 'message' :
-
-          $oParametros->sMensagem = $this->oInput->getParameterOption('-m');
-
-          if ( empty($oParametros->sMensagem) && !is_bool($this->oInput->getOption('message')) ) {
-            $oParametros->sMensagem = $this->oInput->getOption('message');
-          }
-
+          $oParametros->sMensagem = $this->oInput->getOption('message');
         break;
 
         /**
          * Tag do commit 
          */
         case 'tag' :
-
-          $oParametros->iTag = $this->oInput->getParameterOption('-t');
-
-          if ( empty($oParametros->iTag) && !is_bool($this->oInput->getOption('tag')) ) {
-            $oParametros->iTag = $this->oInput->getOption('tag');
-          }
-
-          /**
-           * Remove prefixo, é adicinado no comando push 
-           */
-          $oParametros->iTag = ltrim( strtoupper($oParametros->iTag), 'T' );
-
+          $oParametros->iTag = ltrim( strtoupper($this->oInput->getOption('tag')), 'T' );
         break;
 
         /**
@@ -186,7 +170,7 @@ class AddCommand extends Command {
       $oConfiguracao->sArquivo = $sArquivoAdicionar;
 
       $this->aArquivos[ $sArquivoAdicionar ] = $oConfiguracao;
-      $this->oOutput->writeln(sprintf($sMensagem, 'adicionado a lista', $sArquivoAdicionar));
+      $this->oOutput->writeln(sprintf($sMensagem, 'adicionado a lista', $this->getApplication()->clearPath($sArquivoAdicionar)));
     }
 
     /**
@@ -217,7 +201,7 @@ class AddCommand extends Command {
       $this->aArquivos[ $sArquivo ]->sArquivo = $sArquivo;
 
       if ( $iArquivosAtualizados > 0 ) {
-        $this->oOutput->writeln(sprintf($sMensagem, 'atualizado', $sArquivo));
+        $this->oOutput->writeln(sprintf($sMensagem, 'atualizado', $this->getApplication()->clearPath($sArquivo)));
       }
     }
 

@@ -12,23 +12,11 @@ class CVSApplication extends Application {
   public $sDiretorioObjetos;
 
   private $oOutput;
+  private $oConfig;
 
-  public function __construct() {
+  public function __construct(\Config $oConfig) {
 
     parent::__construct('CVS', CVSApplication::VERSION);
-
-    /**
-     * Configuracoes 
-     * @todo - criar arquivo .cvsgitrc
-     */
-    $aConfiguracoes = require_once(__DIR__ . '/config.php');
-
-    /**
-     * Diretorio 
-     * - Diretorio usado pelo programa, sera criado
-     * - Objetos de commit, configuracoes e arquivos temporarios
-     */
-    $this->sDiretorioObjetos = $aConfiguracoes['sDiretorioObjetos'] . '/' . ltrim('.cvsgit/objects/', '/');
 
     /**
      * Nome do repositorio
@@ -38,14 +26,21 @@ class CVSApplication extends Application {
     }
 
     $this->oOutput = new ConsoleOutput();
+
+    $this->setConfig($oConfig);
+
+    /**
+     * Diretorio 
+     * - Diretorio usado pelo programa, sera criado
+     * - Objetos de commit, configuracoes e arquivos temporarios
+     */
+    $this->sDiretorioObjetos = rtrim($oConfig->get('diretorioArquivosPrograma'), '/') . '/' . ltrim('.cvsgit/objects/', '/');
   }
 
-  private function getProjeto() {
+  public function getProjeto() {
 
     if ( !file_exists($this->sDiretorioObjetos . 'Objects') ) {
-
-      $this->oOutput->writeln(getcwd() . " não inicializado");
-      exit(1);
+      throw new \Exception(getcwd() . " não inicializado, utilize o comando cvsgit init");
     }
 
     $aProjetos = unserialize(file_get_contents($this->sDiretorioObjetos . 'Objects'));
@@ -58,8 +53,7 @@ class CVSApplication extends Application {
       }
     }
 
-    $this->oOutput->writeln(getcwd() . " não inicializado");
-    exit(1);
+    throw new \Exception(getcwd() . " não inicializado, utilize o comando cvsgit init");
   }
 
   public function getArquivos() {
@@ -133,6 +127,28 @@ class CVSApplication extends Application {
    */
   public function getLastError() {
     return trim(file_get_contents('/tmp/cvsgit_last_error'));
+  }
+
+  public function setConfig(\Config $oConfig) {
+    $this->oConfig= $oConfig;
+  }
+
+  public function getConfig($sConfig = null) {
+    return $this->oConfig->get($sConfig);
+  }
+
+  /**
+   * Less
+   * - Exibe saida para terminal com comando "less"
+   *
+   * @param string $sOutput
+   * @access public
+   * @return void
+   */
+  public function less($sOutput) {
+
+    file_put_contents('/tmp/cvsgit_less_output', $sOutput);
+    pcntl_exec('/bin/less', array('/tmp/cvsgit_less_output'));
   }
 
 }

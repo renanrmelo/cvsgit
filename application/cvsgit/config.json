@@ -1,0 +1,82 @@
+/**
+ * --------------------------------------------
+ * Configuracoes
+ * --------------------------------------------
+ */
+{
+  /**
+   * ------------------------------------------
+   * Autenticação
+   * ------------------------------------------
+   * Usuario e senha do cvs
+   */
+  "login" : "dbjeferson.belmiro",
+  "senha" : "halegria",
+
+  /**
+   * ------------------------------------------
+   * Binario diff
+   * ------------------------------------------
+   * marcara para executar binario para diff
+   */
+  "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'color jellybeans | map <F4> :qa<CR>'",
+
+  /**
+   * -------------------------------------------
+   * Output
+   * -------------------------------------------
+   * Codificacao de saida para o terminal
+   */
+  "encodeOutput" : "utf-8",
+
+  /**
+   * -------------------------------------------
+   * Tags
+   * -------------------------------------------
+   * configuracoes das tags
+   */
+  "tag" : {
+
+    /**
+     * tag para usar em todos os commits
+     */
+    "release" : 75655,
+
+    /**
+     * Tags do sprint atual, usada no comentario do commit
+     */
+    "sprint" : {
+      "65870" : "Tributario - Desconto manual",
+      "65649" : "Folha - Calculo de férias"
+    },
+
+    /**
+     * Bloquar commit, ao usar o comando "cvsgit push" 
+     * caso tag usada pelo comando "cvsgit add -t " for 
+     * diferente das tags do sprint
+     */
+    "bloquearPush" : false
+  },
+
+  /**
+   * -------------------------------------------
+   * Ignorar
+   * -------------------------------------------
+   * Arquivos para ignorar
+   */
+  "ignore" : [
+    "libs/db_conn.php",
+    "libs/Debug.php",
+    "debug.php",
+    "debugcli.php"
+  ],
+
+  /**
+   * -------------------------------------------
+   * Arquivos do programa 
+   * -------------------------------------------
+   * Diretorio para salvar arquivos do programa
+   * - Objetos de commit, configuracoes e arquivos temporarios
+   */
+  "diretorioArquivosPrograma" : "/home/jeferson/"
+}
