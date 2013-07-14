@@ -549,7 +549,7 @@ class Command
     public function asText()
     {
         $messages = array(
-            '<comment>Usage:</comment>',
+            '<comment>Uso:</comment>',
             ' '.$this->getSynopsis(),
             '',
         );
@@ -561,7 +561,7 @@ class Command
         $messages[] = $this->getNativeDefinition()->asText();
 
         if ($help = $this->getProcessedHelp()) {
-            $messages[] = '<comment>Help:</comment>';
+            $messages[] = '<comment>Ajuda:</comment>';
             $messages[] = ' '.str_replace("\n", "\n ", $help)."\n";
         }
 
@@ -608,7 +608,7 @@ class Command
     private function validateName($name)
     {
         if (!preg_match('/^[^\:]+(\:[^\:]+)*$/', $name)) {
-            throw new \InvalidArgumentException(sprintf('Command name "%s" is invalid.', $name));
+            throw new \InvalidArgumentException(sprintf('Nome do comando inválido: "%s".', $name));
         }
     }
 }

@@ -216,6 +216,18 @@ class StatusCommand extends Command {
       $oLinha->sArquivo = trim($aLinha[1]);
 
       /**
+       * Arquivos para ignorar 
+       */
+      $aIgnorar = $this->getApplication()->getConfigProjeto('ignore');
+
+      /**
+       * Arquivo está na lista dos ignorados, pula 
+       */
+      if ( in_array($oLinha->sArquivo, $aIgnorar) ) {
+        continue;
+      }
+
+      /**
        * Array com todas as modificaos
        */
       $aModificacoes[ $sTipo ][] = $oLinha;
@@ -451,16 +463,36 @@ class StatusCommand extends Command {
 
       if ( $lTabela ) {
 
-        $oTabelaCommit = new \Table();
-        $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Tag Release', 'Mensagem', 'Tipo'));
+        $lExibirColunaTagRelease = false;
 
         foreach ($aArquivos as $oCommit) {
+
+          if ( !empty($oCommit->iTagRelease) ) {
+
+            $lExibirColunaTagRelease = true;
+            break;
+          }
+        }
+
+        $oTabelaCommit = new \Table();
+        $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Mensagem', 'Tipo'));
+
+        if ( $lExibirColunaTagRelease ) {
+          $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Tag Release', 'Mensagem', 'Tipo'));
+        }
+
+        foreach ($aArquivos as $oCommit) {
+
+          if ( $lExibirColunaTagRelease ) {
+
+            $oTabelaCommit->addRow(array(
+              $this->getApplication()->clearPath($oCommit->sArquivo), $oCommit->iTag, $oCommit->iTagRelease, $oCommit->sMensagem, $oCommit->sTipoCompleto
+            ));
+            continue;
+          }
+
           $oTabelaCommit->addRow(array(
-            $this->getApplication()->clearPath($oCommit->sArquivo),
-            $oCommit->iTag,
-            $oCommit->iTagRelease,
-            $oCommit->sMensagem,
-            $oCommit->sTipoCompleto
+            $this->getApplication()->clearPath($oCommit->sArquivo), $oCommit->iTag, $oCommit->sMensagem, $oCommit->sTipoCompleto
           ));
         }
 

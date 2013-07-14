@@ -51,7 +51,7 @@ class InputOption
         }
 
         if (empty($name)) {
-            throw new \InvalidArgumentException('An option name cannot be empty.');
+            throw new \InvalidArgumentException('O nome da opção não pode ser vazio');
         }
 
         if (empty($shortcut)) {
@@ -64,7 +64,7 @@ class InputOption
             }
 
             if (empty($shortcut)) {
-                throw new \InvalidArgumentException('An option shortcut cannot be empty.');
+                throw new \InvalidArgumentException('Um atalho de opção não pode ser vazio.');
             }
         }
 

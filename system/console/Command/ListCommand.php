@@ -79,9 +79,9 @@ EOF
     private function createDefinition()
     {
         return new InputDefinition(array(
-            new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name'),
-            new InputOption('xml', null, InputOption::VALUE_NONE, 'To output help as XML'),
-            new InputOption('raw', null, InputOption::VALUE_NONE, 'To output raw command list'),
+            new InputArgument('namespace', InputArgument::OPTIONAL, 'Nome do namespace'),
+            new InputOption('xml', null, InputOption::VALUE_NONE, 'Exibe ajuda em XML'),
+            new InputOption('raw', null, InputOption::VALUE_NONE, 'Exibe lista de comandos em linha'),
         ));
     }
 }

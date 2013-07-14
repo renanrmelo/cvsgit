@@ -8,6 +8,8 @@ use Symfony\Component\Console\Input\InputOption;
 
 class HistoryCommand extends Command {
 
+  private $sParametroData;
+
   public function configure() {
 
     $this->setName('history');
@@ -16,10 +18,15 @@ class HistoryCommand extends Command {
 
     $this->addArgument('arquivo', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arquivo para exibir historico');
 
-    $this->addOption('tag', 't', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Tag');
+    $this->addOption('tag', 't',  InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Tag');
+    $this->addOption('date', '',  InputOption::VALUE_REQUIRED, 'Data');
+    $this->addOption('user', 'u', InputOption::VALUE_REQUIRED, 'Usuário');
   }
 
   public function execute($oInput, $oOutput) {
+
+    $this->sParametroData = $oInput->getOption('date'); 
+    $this->sParametroUsuario = $oInput->getOption('user'); 
 
     try {
 
@@ -81,12 +88,7 @@ class HistoryCommand extends Command {
        * Nenhum 
        */
       if ( empty($aTags) && empty($aParametroArquivos) ) {
-
-        $aArquivos = $this->getArquivos();
-
-        foreach ( $aArquivos as $sArquivo ) {
-          $aHistoricos[] = $this->getLogPorArquivo($sArquivo);
-        }
+        return $this->getHistorico($oOutput);
       }
 
       $oTabela = new \Table();
@@ -480,6 +482,61 @@ class HistoryCommand extends Command {
     }
 
     return $aDadosLog;
+  }
+
+  private function getHistorico($oOutput) {
+
+    $sComando = "cvs history -a -c";
+
+    if ( !empty($this->sParametroData) ) {
+      $sComando .= " -D $this->sParametroData";
+    } 
+
+    exec($sComando . ' 2> /tmp/cvsgit_last_error', $aRetorno, $iStatus);
+   
+    if ( $iStatus > 0 ) {
+      throw new \Exception("Erro ao executar $sComando");
+    }
+
+    if ( !empty($aRetorno[0]) && $aRetorno[0] == 'No records selected.' ) {
+      throw new \Exception("Histórico não encontrado");
+    }
+
+    $oTabela = new \Table();
+    $oTabela->setHeaders(array('Arquivo', 'Tipo', 'Autor', 'Data', 'Hora', 'Versão'));
+
+    foreach ( $aRetorno as $sLinha ) {
+
+      $sLinha = preg_replace('/\s(?=\s)/', '', $sLinha);
+      $aLinha = explode(" ", $sLinha);
+      $sTipo = $aLinha[0];
+      $sData = $aLinha[1];
+      $sHora = $aLinha[2];
+      $sAutor = $aLinha[4];
+      $iVersao = $aLinha[5];
+
+      $sArquivo = $aLinha[6];
+
+      if ( trim($aLinha[7]) != $this->getApplication()->sProjeto) {
+        $sArquivo = str_replace($this->getApplication()->sProjeto . '/', '' , $aLinha[7] . '/' . $aLinha[6]);
+      }
+      
+      $oTabela->addRow(array($sArquivo, $sTipo, $sAutor, $sData, $sHora, $iVersao));
+    }
+
+    $sOutput = $oTabela->render();
+    $iColunas  = array_sum($oTabela->getWidths()); 
+    $iColunas += count($oTabela->getWidths()) * 2;
+    $iColunas += count($oTabela->getWidths()) - 1 ;
+
+    if ( $iColunas > \Shell::columns() ) {
+
+      $this->getApplication()->less($sOutput);
+      return;
+    }
+
+    $oOutput->writeln($sOutput);
+    exit;
   }
 
 }

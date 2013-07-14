@@ -15,49 +15,6 @@
   
   /**
    * -------------------------------------------
-   * Tags
-   * -------------------------------------------
-   * configuracoes das tags
-   */
-  "tag" : {
-
-    /**
-     * tag para usar em todos os commits
-     */
-    "release" : "75965",
-
-    /**
-     * Tags do sprint atual, usada no comentario do commit
-     */
-    "sprint" : {
-      "65870" : "Folha      - Calculo de férias",
-      "74565" : "Tributario - Cadastro de paralisação",
-      "78233" : "Tributario - Logradouros"
-    },
-
-    /**
-     * Bloquar commit, ao usar o comando "cvsgit push" 
-     * caso tag usada pelo comando "cvsgit add -t " for 
-     * diferente das tags do sprint
-     */
-    "bloquearPush" : false
-  },
-
-  /**
-   * -------------------------------------------
-   * Ignorar
-   * -------------------------------------------
-   * Arquivos para ignorar
-   */
-  "ignore" : [
-    "libs/db_conn.php",
-    "libs/Debug.php",
-    "debug.php",
-    "debugcli.php"
-  ],
-
-  /**
-   * -------------------------------------------
    * Output
    * -------------------------------------------
    * Codificacao de saida para o terminal

@@ -425,7 +425,7 @@ class InputDefinition
         $text = array();
 
         if ($this->getArguments()) {
-            $text[] = '<comment>Arguments:</comment>';
+            $text[] = '<comment>Argumentos:</comment>';
             foreach ($this->getArguments() as $argument) {
                 if (null !== $argument->getDefault() && (!is_array($argument->getDefault()) || count($argument->getDefault()))) {
                     $default = sprintf('<comment> (default: %s)</comment>', $this->formatDefaultValue($argument->getDefault()));
@@ -442,7 +442,7 @@ class InputDefinition
         }
 
         if ($this->getOptions()) {
-            $text[] = '<comment>Options:</comment>';
+            $text[] = '<comment>Opções:</comment>';
 
             foreach ($this->getOptions() as $option) {
                 if ($option->acceptValue() && null !== $option->getDefault() && (!is_array($option->getDefault()) || count($option->getDefault()))) {
@@ -451,7 +451,7 @@ class InputDefinition
                     $default = '';
                 }
 
-                $multiple = $option->isArray() ? '<comment> (multiple values allowed)</comment>' : '';
+                $multiple = $option->isArray() ? '<comment> (vários valores permitidos)</comment>' : '';
                 $description = str_replace("\n", "\n".str_pad('', $max + 2, ' '), $option->getDescription());
 
                 $optionMax = $max - strlen($option->getName()) - 2;

@@ -240,9 +240,9 @@ class Application
         $messages = array(
             $this->getLongVersion(),
             '',
-            '<comment>Usage:</comment>',
-            sprintf("  [options] command [arguments]\n"),
-            '<comment>Options:</comment>',
+            '<comment>Uso:</comment>',
+            sprintf("  [opções] comando [argumentos]\n"),
+            '<comment>Opções:</comment>',
         );
 
         foreach ($this->getDefinition()->getOptions() as $option) {
@@ -338,7 +338,7 @@ class Application
     public function getLongVersion()
     {
         if ('UNKNOWN' !== $this->getName() && 'UNKNOWN' !== $this->getVersion()) {
-            return sprintf('<info>%s</info> version <comment>%s</comment>', $this->getName(), $this->getVersion());
+            return sprintf('<info>%s</info> versão <comment>%s</comment>', $this->getName(), $this->getVersion());
         }
 
         return '<info>Console Tool</info>';
@@ -416,7 +416,7 @@ class Application
     public function get($name)
     {
         if (!isset($this->commands[$name])) {
-            throw new \InvalidArgumentException(sprintf('The command "%s" does not exist.', $name));
+            throw new \InvalidArgumentException(sprintf('Comando "%s" não existe.', $name));
         }
 
         $command = $this->commands[$name];
@@ -489,14 +489,14 @@ class Application
             $abbrevs = static::getAbbreviations(array_unique(array_values(array_filter(array_map(function ($p) use ($i) { return isset($p[$i]) ? $p[$i] : ''; }, $allNamespaces)))));
 
             if (!isset($abbrevs[$part])) {
-                $message = sprintf('There are no commands defined in the "%s" namespace.', $namespace);
+                $message = sprintf('Nenhum comando foi definido para o namespace "%s".', $namespace);
 
                 if (1 <= $i) {
                     $part = implode(':', $found).':'.$part;
                 }
 
                 if ($alternatives = $this->findAlternativeNamespace($part, $abbrevs)) {
-                    $message .= "\n\nDid you mean one of these?\n    ";
+                    $message .= "\n\nVocê quis dizer?\n    ";
                     $message .= implode("\n    ", $alternatives);
                 }
 
@@ -504,7 +504,7 @@ class Application
             }
 
             if (count($abbrevs[$part]) > 1) {
-                throw new \InvalidArgumentException(sprintf('The namespace "%s" is ambiguous (%s).', $namespace, $this->getAbbreviationSuggestions($abbrevs[$part])));
+                throw new \InvalidArgumentException(sprintf('O namespace "%s" é ambíguo (%s).', $namespace, $this->getAbbreviationSuggestions($abbrevs[$part])));
             }
 
             $found[] = $abbrevs[$part][0];
@@ -553,7 +553,7 @@ class Application
         if (isset($abbrevs[$searchName]) && count($abbrevs[$searchName]) > 1) {
             $suggestions = $this->getAbbreviationSuggestions($abbrevs[$searchName]);
 
-            throw new \InvalidArgumentException(sprintf('Command "%s" is ambiguous (%s).', $name, $suggestions));
+            throw new \InvalidArgumentException(sprintf('Comando "%s" é ambíguo (%s).', $name, $suggestions));
         }
 
         // aliases
@@ -568,10 +568,11 @@ class Application
 
         $aliases = static::getAbbreviations(array_unique($aliases));
         if (!isset($aliases[$searchName])) {
-            $message = sprintf('Command "%s" is not defined.', $name);
+
+            $message = sprintf('Comando "%s" não existe.', $name);
 
             if ($alternatives = $this->findAlternativeCommands($searchName, $abbrevs)) {
-                $message .= "\n\nDid you mean one of these?\n    ";
+                $message .= "\n\nVocê quis dizer?\n    ";
                 $message .= implode("\n    ", $alternatives);
             }
 
@@ -579,7 +580,7 @@ class Application
         }
 
         if (count($aliases[$searchName]) > 1) {
-            throw new \InvalidArgumentException(sprintf('Command "%s" is ambiguous (%s).', $name, $this->getAbbreviationSuggestions($aliases[$searchName])));
+            throw new \InvalidArgumentException(sprintf('Comando "%s" é ambíguo (%s).', $name, $this->getAbbreviationSuggestions($aliases[$searchName])));
         }
 
         return $this->get($aliases[$searchName][0]);
@@ -672,9 +673,9 @@ class Application
 
         $messages = array($this->getHelp(), '');
         if ($namespace) {
-            $messages[] = sprintf("<comment>Available commands for the \"%s\" namespace:</comment>", $namespace);
+            $messages[] = sprintf("<comment>Comandos para namespace: \"%s\"</comment>", $namespace);
         } else {
-            $messages[] = '<comment>Available commands:</comment>';
+            $messages[] = '<comment>Comandos:</comment>';
         }
 
         // add commands by namespace
@@ -684,6 +685,10 @@ class Application
             }
 
             foreach ($commands as $name => $command) {
+              
+                if ( in_array($name, array('help', 'list')) ) {
+                  continue;
+                }
                 $messages[] = sprintf("  <info>%-${width}s</info> %s", $name, $command->getDescription());
             }
         }
@@ -768,15 +773,18 @@ class Application
         do {
             
             $title = 'error';
-            //$aErros = array(
-            //  'RuntimeException' => 'Erro em tempo de execução'
-            //);
+            $aErros = array(
+              'Exception'                => 'Erro',
+              'LogicException'           => 'Erro',
+              'RuntimeException'         => 'Erro',
+              'InvalidArgumentException' => 'Argumento inválido',
+            );
 
-            //$title = get_class($e);
+            $title = get_class($e);
 
-            //if ( !empty($aErros[$title]) ) {
-            //  $title = $aErros[$title];
-            //}
+            if ( !empty($aErros[$title]) ) {
+              $title = $aErros[$title];
+            }
 
             $title = sprintf(' [%s] ', $title);
             $len = $strlen($title);
@@ -828,7 +836,7 @@ class Application
             }
         } while ($e = $e->getPrevious());
 
-        if (null !== $this->runningCommand) {
+        if (get_class($e) == 'InvalidArgumentException' && null !== $this->runningCommand) {
             $output->writeln(sprintf('<info>%s</info>', sprintf($this->runningCommand->getSynopsis(), $this->getName())));
             $output->writeln("");
         }
@@ -900,15 +908,15 @@ class Application
     protected function getDefaultInputDefinition()
     {
         return new InputDefinition(array(
-            new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
+            new InputArgument('command', InputArgument::REQUIRED, 'O comando para executar'),
 
-            new InputOption('--help',           '-h', InputOption::VALUE_NONE, 'Display this help message.'),
-            new InputOption('--quiet',          '-q', InputOption::VALUE_NONE, 'Do not output any message.'),
-            new InputOption('--verbose',        '-v', InputOption::VALUE_NONE, 'Increase verbosity of messages.'),
-            new InputOption('--version',        '-V', InputOption::VALUE_NONE, 'Display this application version.'),
-            new InputOption('--ansi',           '',   InputOption::VALUE_NONE, 'Force ANSI output.'),
-            new InputOption('--no-ansi',        '',   InputOption::VALUE_NONE, 'Disable ANSI output.'),
-            new InputOption('--no-interaction', '',   InputOption::VALUE_NONE, 'Do not ask any interactive question.'),
+            new InputOption('--help',           '-h', InputOption::VALUE_NONE, 'Exibe está mensagem de ajuda'),
+            new InputOption('--quiet',          '-q', InputOption::VALUE_NONE, 'Não exibe nenhuma mensagem'),
+            new InputOption('--verbose',        '-v', InputOption::VALUE_NONE, 'Aumentar detalhe das mensagens'),
+            new InputOption('--version',        '-V', InputOption::VALUE_NONE, 'Exibe versão da aplicação'),
+            new InputOption('--ansi',           '',   InputOption::VALUE_NONE, 'Força saida ANSI'),
+            new InputOption('--no-ansi',        '',   InputOption::VALUE_NONE, 'Desabilita saida ANSI'),
+            new InputOption('--no-interaction', '',   InputOption::VALUE_NONE, 'Não faz nenhuma pergunta interativa'),
         ));
     }
 

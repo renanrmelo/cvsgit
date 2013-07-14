@@ -15,14 +15,22 @@ class ConfigCommand extends Command {
     $this->setName('config');
     $this->setDescription('Exibe configurações da aplicação');
     $this->setHelp('Exibe configurações da aplicação');
-    $this->addOption('edit',  'e', InputOption::VALUE_NONE, 'Editar configurações');
-    $this->addOption('reset', 'r', InputOption::VALUE_NONE, 'Resetar configurações');
+    $this->addOption('edit', 'e', InputOption::VALUE_NONE, 'Editar configurações');
+    $this->addOption('restart', 'r', InputOption::VALUE_NONE, 'Reiniciar configurações');
   }
 
   public function execute($oInput, $oOutput) {
 
-    if ( $oInput->getOption('reset') ) {
-      return $this->criarArquivoConfiguracoes();
+    if ( $oInput->getOption('restart') ) {
+
+      $lCriarConfiguracoes = $this->criarArquivoConfiguracoes();
+
+      if ( !$lCriarConfiguracoes ) {
+        throw new \Exception("Não foi possivel criar arquivo de configurações.");
+      }
+
+      $oOutput->writeln("<info>Configurações reiniciadas.</info>");
+      return;
     }
 
     /**
@@ -84,14 +92,17 @@ class ConfigCommand extends Command {
 
       if ( !empty($tagsSprint) ) {
 
-        $sOutput .= PHP_EOL;
-        $sOutput .= "  <comment>Sprint:</comment>" . PHP_EOL;
-
         if ( is_array($tagsSprint) ) {
+
+          $sOutput .= PHP_EOL;
+          $sOutput .= "  <comment>Sprint:</comment>" . PHP_EOL;
           $sOutput .= '  ' . implode(', ', $tagsSprint). PHP_EOL;
         }
 
         if ( is_object($tagsSprint) ) {
+
+          $sOutput .= PHP_EOL;
+          $sOutput .= "  <comment>Sprint:</comment>" . PHP_EOL;
 
           foreach ( $tagsSprint as $sTag => $sDescricao ) {
 
@@ -164,7 +175,7 @@ class ConfigCommand extends Command {
     $sConteudoArquivo .= ' * ----------------------------------------------------------' . PHP_EOL;
     $sConteudoArquivo .= ' */ ' . PHP_EOL;
     $sConteudoArquivo .= '{' . PHP_EOL;
-    $sConteudoArquivo .= '                                                             ' . PHP_EOL;
+    $sConteudoArquivo .= PHP_EOL;
     $sConteudoArquivo .= '  /** ' . PHP_EOL;
     $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
     $sConteudoArquivo .= '   * Tags                                                    ' . PHP_EOL;
@@ -175,33 +186,41 @@ class ConfigCommand extends Command {
     $sConteudoArquivo .= '                                                             ' . PHP_EOL;
     $sConteudoArquivo .= '    /**' . PHP_EOL;
     $sConteudoArquivo .= '     * tag para usar em todos os commits ' . PHP_EOL;
+    $sConteudoArquivo .= '     *' . PHP_EOL;
+    $sConteudoArquivo .= '     * @var integer | string' . PHP_EOL;
     $sConteudoArquivo .= '     */' . PHP_EOL;
     $sConteudoArquivo .= '    "release" : null,' . PHP_EOL;
-    $sConteudoArquivo .= '                                                             ' . PHP_EOL;
+    $sConteudoArquivo .= PHP_EOL;
     $sConteudoArquivo .= '    /**                                                      ' . PHP_EOL;
     $sConteudoArquivo .= '     * Tags do sprint atual, usada no comentario do commit' . PHP_EOL;
+    $sConteudoArquivo .= '     *' . PHP_EOL;
+    $sConteudoArquivo .= '     * @var array | objetct' . PHP_EOL;
     $sConteudoArquivo .= '     */' . PHP_EOL;
-    $sConteudoArquivo .= '    "sprint" : {' . PHP_EOL;
-    $sConteudoArquivo .= '    },' . PHP_EOL;
+    $sConteudoArquivo .= '    "sprint" : [' . PHP_EOL;
+    $sConteudoArquivo .= '    ],' . PHP_EOL;
     $sConteudoArquivo .= '                                                             ' . PHP_EOL;
     $sConteudoArquivo .= '    /**' . PHP_EOL;
-    $sConteudoArquivo .= '     * Bloquar commit, ao usar o comando "cvsgit push" ' . PHP_EOL;
+    $sConteudoArquivo .= '     * Bloquar commit' . PHP_EOL;
+    $sConteudoArquivo .= '     * Ao usar o comando "cvsgit push" ' . PHP_EOL;
     $sConteudoArquivo .= '     * caso tag usada pelo comando "cvsgit add -t " for' . PHP_EOL;
-    $sConteudoArquivo .= '     * diferente das tags do sprint' . PHP_EOL;
+    $sConteudoArquivo .= '     * diferente das tags do sprint, bloqueia push' . PHP_EOL;
+    $sConteudoArquivo .= '     *' . PHP_EOL;
+    $sConteudoArquivo .= '     * @var boolean' . PHP_EOL;
     $sConteudoArquivo .= '     */ ' . PHP_EOL;
     $sConteudoArquivo .= '    "bloquearPush" : false' . PHP_EOL;
     $sConteudoArquivo .= '  },' . PHP_EOL;
-    $sConteudoArquivo .= '                                                             ' . PHP_EOL;
+    $sConteudoArquivo .= PHP_EOL;
     $sConteudoArquivo .= '  /**' . PHP_EOL;
     $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
     $sConteudoArquivo .= '   * Ignorar                                                 ' . PHP_EOL;
     $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= '   * Arquivos para ignorar' . PHP_EOL;
+    $sConteudoArquivo .= '   * Arquivos para ignorar modificações' . PHP_EOL;
+    $sConteudoArquivo .= '   *' . PHP_EOL;
+    $sConteudoArquivo .= '   * @var array' . PHP_EOL;
     $sConteudoArquivo .= '   */' . PHP_EOL;
     $sConteudoArquivo .= '  "ignore" : [' . PHP_EOL;
-    $sConteudoArquivo .= '    "libs/db_conn.php"' . PHP_EOL;
     $sConteudoArquivo .= '  ]' . PHP_EOL;
-    $sConteudoArquivo .= '' . PHP_EOL;
+    $sConteudoArquivo .= PHP_EOL;
     $sConteudoArquivo .= '}' . PHP_EOL;
 
     $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());

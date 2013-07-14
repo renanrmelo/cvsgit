@@ -21,11 +21,11 @@ class PushCommand extends Command {
 
     $aArquivos = $this->getApplication()->getArquivos();
 
-    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
-    $this->oConfig = new \Config($sArquivo);
+    $this->oConfig = $this->getApplication()->getConfigProjeto();
 
     if ( empty($aArquivos) ) {
 
+      throw new \LogicException("Nenhum arquivo para comitar");
       $oOutput->writeln("<error>Nenhum arquivo para comitar</error>");
       return;
     }
@@ -34,6 +34,7 @@ class PushCommand extends Command {
     $oTabela->setHeaders(array('Arquivo', 'Tag', 'Mensagem', 'Tipo'));
     $aLinhas = array();
     $aComandos = array();
+    $aMensagemErro = array();
     $iErros  = 0;
 
     $aTagSprint = $this->getTagsSprint();
@@ -48,7 +49,6 @@ class PushCommand extends Command {
       $sMensagem     = $oCommit->sMensagem;
       $sTipoCompleto = $oCommit->sTipoCompleto;
       $sErro         = '<error>[x]</error>';
-      $aMensagemErro = array();
 
       /**
        * @todo, se arquivo nao existir usar cvs status para saber se deve deixar arquivo 
@@ -74,12 +74,13 @@ class PushCommand extends Command {
         $iErros++;
       }
 
-      if ( !empty($aTagSprint) && !in_array($oCommit->iTag, $aTagSprint) ) {
+      if ( !empty($oCommit->iTag) && !empty($aTagSprint) && !in_array($oCommit->iTag, $aTagSprint) ) {
 
-        $iTag = $sErro . ' ' .$oCommit->iTag;
         $aMensagemErro[$sArquivo][] = $oCommit->iTag . ": Tag não é do spring";
 
         if ( $this->oConfig->get('tag')->bloquearPush ) {
+
+          $iTag = $sErro . ' ' .$oCommit->iTag;
           $iErros++;
         }
       }
@@ -106,7 +107,7 @@ class PushCommand extends Command {
       foreach ( $aMensagemErro as $sArquivo => $aMensagemArquivo ) {
 
         $oOutput->writeln("\n -- " . $sArquivo);
-        $oOutput->writeln("    " . implode("\n", $aMensagemArquivo));
+        $oOutput->writeln("    " . implode("\n    ", $aMensagemArquivo));
       } 
 
       $oOutput->writeln($oTabela->render());
@@ -119,10 +120,15 @@ class PushCommand extends Command {
 
       foreach($aCommits as $oCommit) {
 
+        $sMensagemAviso  = "";
         $sMensagemCommit = $oCommit->sMensagem;
         $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
 
-        $oOutput->writeln("-- <comment>$sArquivoCommit:</comment>");
+        if ( !empty($aMensagemErro[$sArquivoCommit]) ) {
+          $sMensagemAviso = '"' . implode(" | " , $aMensagemErro[$sArquivoCommit]). '"';
+        }
+
+        $oOutput->writeln("-- <comment>$sArquivoCommit:</comment> $sMensagemAviso");
 
         if ( $oCommit->sTipoAbreviado == 'ADD' ) {
           $oOutput->writeln("   " . $this->addArquivo($oCommit));
@@ -133,17 +139,6 @@ class PushCommand extends Command {
         $oOutput->writeln('');
       }
 
-    }
-
-    if ( !empty($aMensagemErro) ) {
-
-      foreach ( $aMensagemErro as $sArquivo => $aMensagemArquivo ) {
-
-        $oOutput->writeln("-- <comment>" . $sArquivo . "</comment>");
-        $oOutput->writeln("   " . implode("\n", $aMensagemArquivo));
-      } 
-
-      $oOutput->writeln("");
     }
 
     $iTagRelease = $this->oConfig->get('tag')->release;
@@ -169,6 +164,7 @@ class PushCommand extends Command {
 
       foreach($aCommits as $oCommit) {
 
+        $sArquivoCommit = $this->getApplication()->clearPath($oCommit->sArquivo);
         $sComandoAdd    = $this->addArquivo($oCommit)    . " 2> /tmp/cvsgit_last_error";
         $sComandoCommit = $this->commitArquivo($oCommit) . " 2> /tmp/cvsgit_last_error";
         $sComandoTag    = $this->tagArquivo($oCommit)    . " 2> /tmp/cvsgit_last_error";
@@ -258,7 +254,7 @@ class PushCommand extends Command {
     $aTagSprint = array();
 
     if ( is_array($tagsSprint) ) {
-      $aTagSprint = tagsSprint;
+      $aTagSprint = $tagsSprint;
     }
 
     if ( is_object($tagsSprint) ) {

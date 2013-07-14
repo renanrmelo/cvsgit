@@ -141,6 +141,23 @@ class CVSApplication extends Application {
     return $this->oConfig->get($sConfig);
   }
 
+  public function getConfigProjeto($sConfig = null) {
+
+    $sArquivo = $this->sDiretorioObjetos . md5('config_' . $this->getProjeto());
+
+    if ( !file_exists($sArquivo) ) {
+      return null;
+    }
+
+    $oConfig = new \Config($sArquivo);
+
+    if ( is_null($sConfig) ) {
+      return $oConfig;
+    }
+
+    return $oConfig->get($sConfig);
+  }
+
   /**
    * Less
    * - Exibe saida para terminal com comando "less"

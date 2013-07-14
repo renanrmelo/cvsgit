@@ -102,7 +102,7 @@ function createAutoComplete($sAplicacao) {
   $sAutoComplete .= '                                                                  ' . PHP_EOL;
   $sAutoComplete .= '    PHP=\'$ret = shell_exec($argv[1]);                            ' . PHP_EOL;
   $sAutoComplete .= '                                                                  ' . PHP_EOL;
-  $sAutoComplete .= '$ret = preg_replace("/^.*Available commands:\n/s", "", $ret);     ' . PHP_EOL;
+  $sAutoComplete .= '$ret = preg_replace("/^.*Comandos:\n/s", "", $ret);     ' . PHP_EOL;
   $sAutoComplete .= '$ret = explode("\n", $ret);                                       ' . PHP_EOL;
   $sAutoComplete .= '                                                                  ' . PHP_EOL;
   $sAutoComplete .= '$comps = array();                                                 ' . PHP_EOL;

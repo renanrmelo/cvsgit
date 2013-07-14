@@ -178,7 +178,7 @@ class ArgvInput extends Input
 
         // unexpected argument
         } else {
-            throw new \RuntimeException('Too many arguments.');
+            throw new \RuntimeException('Muitos argumentos.');
         }
     }
 
@@ -193,7 +193,7 @@ class ArgvInput extends Input
     private function addShortOption($shortcut, $value)
     {
         if (!$this->definition->hasShortcut($shortcut)) {
-            throw new \RuntimeException(sprintf('The "-%s" option does not exist.', $shortcut));
+            throw new \RuntimeException(sprintf('A opção "-%s" não existe.', $shortcut));
         }
 
         $this->addLongOption($this->definition->getOptionForShortcut($shortcut)->getName(), $value);
@@ -210,7 +210,7 @@ class ArgvInput extends Input
     private function addLongOption($name, $value)
     {
         if (!$this->definition->hasOption($name)) {
-            throw new \RuntimeException(sprintf('The "--%s" option does not exist.', $name));
+            throw new \RuntimeException(sprintf('A opção "--%s" não existe.', $name));
         }
 
         $option = $this->definition->getOption($name);
@@ -228,7 +228,7 @@ class ArgvInput extends Input
 
         if (null === $value) {
             if ($option->isValueRequired()) {
-                throw new \RuntimeException(sprintf('The "--%s" option requires a value.', $name));
+                throw new \RuntimeException(sprintf('A opção "--%s" requer um valor.', $name));
             }
 
             $value = $option->isValueOptional() ? $option->getDefault() : true;
