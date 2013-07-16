@@ -29,23 +29,25 @@ class PullCommand extends Command {
 
     $oOutput->writeln(str_repeat(' ', \Shell::columns()) . "\r" . "Atualizações baixados");
 
-
     $sComandoRoot = '';
 
-    if ( file_exists(dirname(__DIR__) . "/config.php") ) {
+    /**
+     * Senha do root
+     */
+    $sSenhaRoot = $this->getApplication()->getConfig('senhaRoot');
 
-      $aConfig = require dirname(__DIR__) . "/config.php";
-      if ( !empty($aConfig['sRootPassword']) ) {
-        $sComandoRoot = "echo '{$aConfig['sRootPassword']}' | sudo -S ";
-      }
+    /**
+     * Executa comando como root 
+     * - caso for existir senha no arquivo de configuracoes
+     */
+    if ( !empty($sSenhaRoot) ) {
+      $sComandoRoot = "echo '{$sSenhaRoot}' | sudo -S ";
     }
 
     exec($sComandoRoot . 'chmod 777 -R ' . getcwd() . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoPermissoes, $iStatusComandoPermissoes);
 
     if ( $iStatusComandoPermissoes > 0 ) {
-
-      $this->output("Erro ao atualizar permissões dos arquivos, verifique arquivo de log", "aviso");
-      return $iStatusComandoPermissoes;
+      throw new \Exception("Erro ao atualizar permissões dos arquivos, verifique arquivo de log");
     }
 
   }

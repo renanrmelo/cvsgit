@@ -223,7 +223,7 @@ class StatusCommand extends Command {
       /**
        * Arquivo está na lista dos ignorados, pula 
        */
-      if ( in_array($oLinha->sArquivo, $aIgnorar) ) {
+      if ( !empty($aIgnorar) && in_array($oLinha->sArquivo, $aIgnorar) ) {
         continue;
       }
 

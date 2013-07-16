@@ -56,6 +56,7 @@ class ConfigCommand extends Command {
       return;
     }
 
+    $this->carregarArquivoConfiguracoes();
     $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
     $oConfig = new \Config($sArquivo);
 

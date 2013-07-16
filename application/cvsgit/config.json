@@ -1,6 +1,6 @@
 /**
  * --------------------------------------------
- * Configuracoes
+ * Configuracoes em JSON
  * --------------------------------------------
  */
 {
@@ -9,6 +9,8 @@
    * Autenticação
    * ------------------------------------------
    * Usuario e senha do cvs
+   *
+   * @var string
    */
   "login" : "dbjeferson.belmiro",
   "senha" : "halegria",
@@ -18,6 +20,8 @@
    * Output
    * -------------------------------------------
    * Codificacao de saida para o terminal
+   *
+   * @var string
    */
   "encodeOutput" : "utf-8",
 
@@ -26,6 +30,8 @@
    * Binario diff
    * ------------------------------------------
    * marcara para executar binario para diff
+   *
+   * @var string
    */
   "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'color jellybeans | map <F4> :qa<CR>'",
 
@@ -35,6 +41,18 @@
    * -------------------------------------------
    * Diretorio para salvar arquivos do programa
    * - Objetos de commit, configuracoes e arquivos temporarios
+   *
+   * @var string
    */
-  "diretorioArquivosPrograma" : "/home/jeferson/"
+  "diretorioArquivosPrograma" : "/home/jeferson/",
+
+  /**
+   * -------------------------------------------
+   * Senha do usuario root 
+   * -------------------------------------------
+   * usado no comando pull para definir permisao dos arquivos
+   *
+   * @var string
+   */
+  "senhaRoot" : ""
 }

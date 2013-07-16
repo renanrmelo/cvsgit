@@ -48,14 +48,11 @@ class AddCommand extends Command {
   public function processaArgumentos() {
 
     $aArquivos = array();
-    
-    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
-    $this->oConfig = new \Config($sArquivo);
 
     $oParametros = new \StdClass();
     $oParametros->sMensagem      = null;
     $oParametros->iTag           = null;
-    $oParametros->iTagRelease    = $this->oConfig->get('tag')->release;
+    $oParametros->iTagRelease    = null;
     $oParametros->sTipoAbreviado = null;
     $oParametros->sTipoCompleto  = null;
     $oParametros->sArquivo       = null;
@@ -181,6 +178,10 @@ class AddCommand extends Command {
       $oConfiguracao = clone $this->oConfiguracaoCommit;
       $oConfiguracao->sArquivo = $sArquivoAdicionar;
 
+      if ( empty($oConfiguracao->iTagRelease) ) {
+        $oConfiguracao->iTagRelease = $this->getApplication()->getConfigProjeto('tag')->release;    
+      }
+
       $this->aArquivos[ $sArquivoAdicionar ] = $oConfiguracao;
       $this->oOutput->writeln(sprintf($sMensagem, 'adicionado a lista', $this->getApplication()->clearPath($sArquivoAdicionar)));
     }
@@ -202,7 +203,7 @@ class AddCommand extends Command {
 
       foreach ( $this->oConfiguracaoCommit as $sConfiguracao => $sValorConfiguracao ) {
 
-        if ( empty($sValorConfiguracao) || $sValorConfiguracao == 'sArquivo' ) {
+        if ( empty($sValorConfiguracao) ) {
           continue;
         }
 
