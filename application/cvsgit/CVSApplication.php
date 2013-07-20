@@ -13,103 +13,17 @@ class CVSApplication extends Application {
 
   private $oOutput;
   private $oConfig;
+  private $oDataBase;
+  private $oModel;
 
   public function __construct(\Config $oConfig) {
 
     parent::__construct('CVS', CVSApplication::VERSION);
 
-    /**
-     * Nome do repositorio
-     */
-    if ( file_exists('CVS/Repository') ) {
-      $this->sProjeto = trim(file_get_contents('CVS/Repository'));
-    }
-
     $this->oOutput = new ConsoleOutput();
-
+    $this->oFileDataBase = new \FileDataBase(APPLICATION_DIR . 'cvsgit/cvsgit.db');
+    $this->oModel = new \CvsGitModel($this->oFileDataBase);
     $this->setConfig($oConfig);
-
-    /**
-     * Diretorio 
-     * - Diretorio usado pelo programa, sera criado
-     * - Objetos de commit, configuracoes e arquivos temporarios
-     */
-    $this->sDiretorioObjetos = rtrim($oConfig->get('diretorioArquivosPrograma'), '/') . '/' . ltrim('.cvsgit/objects/', '/');
-  }
-
-  public function getDiretorioObjetos() {
-    return $this->sDiretorioObjetos;
-  }
-
-  public function getProjeto() {
-
-    if ( !file_exists($this->sDiretorioObjetos . 'Objects') ) {
-      throw new \Exception(getcwd() . " não inicializado, utilize o comando cvsgit init");
-    }
-
-    $aProjetos = unserialize(file_get_contents($this->sDiretorioObjetos . 'Objects'));
-    $sDiretorioAtual = getcwd();
-
-    foreach ($aProjetos as $sProjeto) {
-
-      if ( strpos($sDiretorioAtual, $sProjeto) !== false && strpos($sDiretorioAtual, $sProjeto) == 0 ) {
-        return $sProjeto;
-      }
-    }
-
-    throw new \Exception(getcwd() . " não inicializado, utilize o comando cvsgit init");
-  }
-
-  public function getArquivos() {
-    
-    $sDiretorioProjeto = $this->getProjeto();
-    $sDiretorioObjetos = $this->sDiretorioObjetos . md5($sDiretorioProjeto);
-
-    if ( !file_exists($sDiretorioObjetos) ) {
-      return array();
-    }
-
-    return unserialize(file_get_contents($sDiretorioObjetos));
-  }
-
-  /**
-   * Salva arquivos
-   *
-   * @param Array $aArquivos
-   * @access private
-   * @return boolean
-   */
-  public function salvarArquivos(Array $aArquivos) {
-
-    $sDiretorioProjeto = $this->getProjeto();
-    $sDiretorioObjetos = $this->sDiretorioObjetos . md5($sDiretorioProjeto);
-
-    return file_put_contents($sDiretorioObjetos, serialize($aArquivos));
-  }
-
-  /**
-   * Remove arquivos
-   *
-   * @param Array $aArquivosRemover
-   * @access public
-   * @return boolean
-   */
-  public function removerArquivos(Array $aArquivosRemover) {
-
-    $aArquivos = $this->getArquivos();
-
-    foreach ( $aArquivosRemover as $sArquivoRemover ) {
-
-      if ( !empty($aArquivos[$sArquivoRemover]) ) {
-        unset($aArquivos[$sArquivoRemover]);
-      }
-
-      if ( !empty($aArquivos[getcwd() . '/' . $sArquivoRemover]) ) {
-        unset($aArquivos[getcwd() . '/' . $sArquivoRemover]);
-      } 
-    }
-
-    return $this->salvarArquivos($aArquivos);
   }
 
   /**
@@ -125,6 +39,7 @@ class CVSApplication extends Application {
 
   /**
    * Retorna o ultimo erro dos comandos passados para o shell
+   * @todo incluir last error no banco
    *
    * @access private
    * @return string
@@ -141,9 +56,12 @@ class CVSApplication extends Application {
     return $this->oConfig->get($sConfig);
   }
 
+  /**
+   * @todo - usar um arquivo de config somente
+   */
   public function getConfigProjeto($sConfig = null) {
 
-    $sArquivo = $this->sDiretorioObjetos . md5('config_' . $this->getProjeto());
+    $sArquivo = getenv('HOME') . '/.' . $this->getModel()->getProjeto()->name . '_config.json';
 
     if ( !file_exists($sArquivo) ) {
       return null;
@@ -170,6 +88,20 @@ class CVSApplication extends Application {
 
     file_put_contents('/tmp/cvsgit_less_output', $sOutput);
     pcntl_exec('/bin/less', array('/tmp/cvsgit_less_output'));
+  }
+
+  /**
+   * Retorna o banco de dados
+   *
+   * @access public
+   * @return FileDataBase
+   */
+  public function getFileDataBase() {
+    return $this->oFileDataBase;
+  }
+
+  public function getModel() {
+    return $this->oModel;
   }
 
 }

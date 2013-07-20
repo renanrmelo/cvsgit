@@ -21,9 +21,9 @@ class AddCommand extends Command {
 
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para commit');
 
-    $this->addOption('message',     'm', InputOption::VALUE_REQUIRED, 'Mensagem de log' );
-    $this->addOption('tag',         't', InputOption::VALUE_REQUIRED, 'Tag' );
-    $this->addOption('tag-release', 'r', InputOption::VALUE_REQUIRED, 'Tag da release' );
+    $this->addOption('message',    'm', InputOption::VALUE_REQUIRED, 'Mensagem de log' );
+    $this->addOption('tag',        't', InputOption::VALUE_REQUIRED, 'Tag' );
+    $this->addOption('tag-commit', 'T', InputOption::VALUE_REQUIRED, 'Usa mesma tag nos comandos commit e tag' );
 
     $this->addOption('added',    'a', InputOption::VALUE_NONE, 'Tipo de commit: Adicionar arquivo' );
     $this->addOption('enhanced', 'e', InputOption::VALUE_NONE, 'Tipo de commit: Melhoria' );
@@ -38,7 +38,7 @@ class AddCommand extends Command {
     $this->oInput  = $oInput;
     $this->oOutput = $oOutput;
 
-    $this->aArquivos = $this->getApplication()->getArquivos(); 
+    $this->aArquivos = $this->getApplication()->getModel()->getArquivos(); 
     $this->aArquivosAdicionar = array();
 
     $this->processaArgumentos();
@@ -82,8 +82,11 @@ class AddCommand extends Command {
         /**
          * Tag do commit 
          */
-        case 'tag-release' :
-          $oParametros->iTagRelease = ltrim( strtoupper($this->oInput->getOption('tag-release')), 'T' );
+        case 'tag-commit' :
+
+          $oParametros->iTag = ltrim( strtoupper($this->oInput->getOption('tag-commit')), 'T' );
+          $oParametros->iTagRelease = ltrim( strtoupper($this->oInput->getOption('tag-commit')), 'T' );
+
         break;
 
         /**
@@ -219,7 +222,7 @@ class AddCommand extends Command {
     }
 
     if ( $iArquivosAtualizados > 0 || !empty($this->aArquivosAdicionar) ) {
-      $this->getApplication()->salvarArquivos( $this->aArquivos );
+      $this->getApplication()->getModel()->salvarArquivos( $this->aArquivos );
     }
   }
 

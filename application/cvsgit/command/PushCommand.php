@@ -19,7 +19,7 @@ class PushCommand extends Command {
 
   public function execute($oInput, $oOutput) {
 
-    $aArquivos = $this->getApplication()->getArquivos();
+    $aArquivos = $this->getApplication()->getModel()->getArquivos();
 
     $this->oConfig = $this->getApplication()->getConfigProjeto();
 
@@ -197,7 +197,7 @@ class PushCommand extends Command {
         }
         
         $oOutput->writeln("<info> - Arquivo commitado: $sArquivoCommit</info>");
-        $aArquivosCommitados[] = $oCommit->sArquivo;
+        $aArquivosCommitados[] = $oCommit;
       }
 
     }
@@ -206,7 +206,14 @@ class PushCommand extends Command {
      * Remove arquivos já commitados 
      */
     if ( !empty($aArquivosCommitados) ) {
-      $this->getApplication()->removerArquivos($aArquivosCommitados);
+
+      $sTituloPush = "Commits";
+
+      if ( !empty($iTagRelease) ) {
+        $sTituloPush = "Commits da release com tag: $iTagRelease";
+      }
+
+      $this->getApplication()->getModel()->push($aArquivosCommitados, $sTituloPush);
     }
 
     $oOutput->writeln('');

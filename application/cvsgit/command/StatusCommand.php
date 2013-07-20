@@ -168,7 +168,7 @@ class StatusCommand extends Command {
     /**
      * lista dos arquivos adicionados para commit 
      */
-    $aArquivos = $this->getApplication()->getArquivos();
+    $aArquivos = $this->getApplication()->getModel()->getArquivos();
 
     exec('cvs -qn update -dR 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
 
@@ -478,7 +478,7 @@ class StatusCommand extends Command {
         $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Mensagem', 'Tipo'));
 
         if ( $lExibirColunaTagRelease ) {
-          $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Tag Release', 'Mensagem', 'Tipo'));
+          $oTabelaCommit->setHeaders(array('Arquivo', 'Tag Mensagem', 'Tag Arquivo', 'Mensagem', 'Tipo'));
         }
 
         foreach ($aArquivos as $oCommit) {

@@ -17,41 +17,43 @@ class InitCommand extends Command {
 
   public function execute($oInput, $oOutput) {
 
-    $oApplication = $this->getApplication();
-
-    /**
-     * Cria diretorio 
-     */
-    if ( !is_dir($oApplication->sDiretorioObjetos) ) {
-      mkdir($oApplication->sDiretorioObjetos, 0777, true);
+    if ( !file_exists('CVS/Repository') ) {
+      throw new \Exception('Diretório atual não é um repositorio CVS.');
     }
 
-    /**
-     * Cria arquivo com objeto vazio 
-     */
-    if ( !file_exists($oApplication->sDiretorioObjetos . 'Objects') ) {
-      file_put_contents($oApplication->sDiretorioObjetos . 'Objects', serialize(array()));
-    }
-
-    $aProjetos       = unserialize(file_get_contents($oApplication->sDiretorioObjetos . 'Objects'));
     $sDiretorioAtual = getcwd();
+    $sRepositorio = trim(file_get_contents('CVS/Repository'));
+
+    $oFileDataBase = $this->getApplication()->getFileDataBase();
+    $aProjetos = $oFileDataBase->selectAll("select name, path from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
 
     /**
      * Diretorio atual ja inicializado 
      */
-    if ( in_array($sDiretorioAtual, $aProjetos) ) {
+    foreach( $aProjetos as $oProjeto ) {
 
-      $oOutput->writeln(sprintf('<info>"%s" já inicializado</info>', getcwd()));
-      return true;
+      /**
+       * Repositorio 
+       */
+      if ( $oProjeto->name == $sRepositorio ) {
+
+        $oOutput->writeln(sprintf('<info>"%s" já inicializado</info>', $sRepositorio));
+        return true;
+      }
+
+      /**
+       * Diretorio atual 
+       */
+      if ( $oProjeto->path == $sDiretorioAtual ) {
+
+        $oOutput->writeln(sprintf('<info>"%s" já inicializado</info>', $sDiretorioAtual));
+        return true;
+      }
     }   
 
-    $aProjetos[] = $sDiretorioAtual;
+    $oFileDataBase->insert('project', array('name' => $sRepositorio, 'path' => $sDiretorioAtual, 'date' => date('Y-m-d H:i:s')));
 
-    file_put_contents($oApplication->sDiretorioObjetos . 'Objects', serialize($aProjetos));
-
-    if ( file_exists($oApplication->sDiretorioObjetos) ) {
-      $oOutput->writeln(sprintf('<info>"%s" inicializado</info>', getcwd()));
-    }
+    $oOutput->writeln(sprintf('<info>"%s" inicializado</info>', $sRepositorio));
   }
 
 }

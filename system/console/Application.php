@@ -778,6 +778,7 @@ class Application
               'LogicException'           => 'Erro',
               'RuntimeException'         => 'Erro',
               'InvalidArgumentException' => 'Argumento inválido',
+              'PDOException'             => 'PDO'
             );
 
             $title = get_class($e);

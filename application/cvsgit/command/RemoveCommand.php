@@ -18,7 +18,7 @@ class RemoveCommand extends Command {
 
   public function execute($oInput, $oOutput) {
 
-    $aArquivos = $this->getApplication()->getArquivos();
+    $aArquivos = $this->getApplication()->getModel()->getArquivos();
     $aArquivosInformados = $oInput->getArgument('arquivos');
     $aArquivosRemover = array();
 
@@ -55,7 +55,7 @@ class RemoveCommand extends Command {
 
     if ( !empty($aArquivosRemover) ) {
 
-      $lRemovido = $this->getApplication()->removerArquivos($aArquivosRemover);
+      $lRemovido = $this->getApplication()->getModel()->removerArquivos($aArquivosRemover);
 
       foreach( $aArquivosRemover as $sArquivoRemovido ) {
         $oOutput->writeln("<info>Arquivo removido da lista: $sArquivoRemovido</info>");

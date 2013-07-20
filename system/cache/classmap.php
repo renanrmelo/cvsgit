@@ -32,6 +32,7 @@ return Array(
   'Encode' => '/opt/lampp/htdocs/console/system/library/Encode.php',
   'Config' => '/opt/lampp/htdocs/console/system/library/Config.php',
   'String' => '/opt/lampp/htdocs/console/system/library/String.php',
+  'FileDataBase' => '/opt/lampp/htdocs/console/system/library/FileDataBase.php',
   'Log' => '/opt/lampp/htdocs/console/system/library/Log.php',
   'Shell' => '/opt/lampp/htdocs/console/system/library/Shell.php',
   'Table' => '/opt/lampp/htdocs/console/system/library/Table.php',

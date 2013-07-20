@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 class ConfigCommand extends Command {
 
-  private $sArquivoConfiguracoesTemporarios = '/tmp/cvsgit.json'; 
+  private $sArquivoConfiguracoes; 
 
   public function configure() {
 
@@ -21,16 +21,19 @@ class ConfigCommand extends Command {
 
   public function execute($oInput, $oOutput) {
 
+    $this->sArquivoConfiguracoes  = getenv('HOME') . '/.';
+    $this->sArquivoConfiguracoes .= basename($this->getApplication()->getModel()->getProjeto()->name) . '_config.json';
+
     if ( $oInput->getOption('restart') ) {
 
-      $lCriarConfiguracoes = $this->criarArquivoConfiguracoes();
-
-      if ( !$lCriarConfiguracoes ) {
-        throw new \Exception("Não foi possivel criar arquivo de configurações.");
-      }
+      $this->criarArquivoConfiguracoes();
 
       $oOutput->writeln("<info>Configurações reiniciadas.</info>");
       return;
+    }
+
+    if ( !file_exists($this->sArquivoConfiguracoes) ) {
+      $this->criarArquivoConfiguracoes();
     }
 
     /**
@@ -38,33 +41,26 @@ class ConfigCommand extends Command {
      */
     if ( $oInput->getOption('edit') ) {
 
-      $this->carregarArquivoConfiguracoes();
-
       $iStatus = $this->editarArquivoConfiguracoes();
 
       if ( $iStatus > 0 ) {
-        throw new \Exception('Não foi possivel salvar configurações, ' . $iStatus);
+        throw new \Exception('Não foi possivel editar configurações');
       }
 
-      $lSalvar = $this->salvarArquivoConfiguracoes();
-
-      if ( !$lSalvar ) {
-        throw new \Exception('Não foi possivel salvar configurações');
-      }
-
-      $oOutput->writeln('<info>Configurações salvas</info>');
       return;
     }
 
-    $this->carregarArquivoConfiguracoes();
-    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
-    $oConfig = new \Config($sArquivo);
+    $oConfig = new \Config($this->sArquivoConfiguracoes);
 
-    $sOutput       = '';
+    $sOutput       = PHP_EOL;
     $aIgnore       = $oConfig->get('ignore');
     $iTagRelease   = $oConfig->get('tag')->release;
     $tagsSprint    = $oConfig->get('tag')->sprint;
     $sBloquearPush = $oConfig->get('tag')->bloquearPush ? 'Sim' : 'Não';
+
+
+    $sOutput .= "- <comment>Arquivo:</comment> " . PHP_EOL;
+    $sOutput .= "  " .$this->sArquivoConfiguracoes . PHP_EOL;
 
     /**
      * Ignorar 
@@ -138,34 +134,11 @@ class ConfigCommand extends Command {
     } 
 
     if ($pid == 0 ) { 
-      pcntl_exec('/usr/bin/vim', array($this->sArquivoConfiguracoesTemporarios, '-c', 'set ft=javascript'));
+      pcntl_exec('/usr/bin/vim', array($this->sArquivoConfiguracoes, '-c', 'set ft=javascript'));
     }
 
     pcntl_waitpid($pid, $status);
     return $status;
-  }
-
-  private function salvarArquivoConfiguracoes() {
-
-    try {
-      $oConfig  = new \Config($this->sArquivoConfiguracoesTemporarios);
-    } catch(\Exception $oErro) {
-      throw new \Exception('Configuracões não salvas, json inválido.');
-    }
-
-    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
-    return file_put_contents($sArquivo, file_get_contents($this->sArquivoConfiguracoesTemporarios));
-  }
-
-  private function carregarArquivoConfiguracoes() {
-
-    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
-
-    if ( !file_exists($sArquivo) ) {
-      $this->criarArquivoConfiguracoes();
-    }
-
-    return file_put_contents($this->sArquivoConfiguracoesTemporarios, file_get_contents($sArquivo));
   }
 
   private function criarArquivoConfiguracoes() {
@@ -224,9 +197,13 @@ class ConfigCommand extends Command {
     $sConteudoArquivo .= PHP_EOL;
     $sConteudoArquivo .= '}' . PHP_EOL;
 
-    $sArquivo = $this->getApplication()->getDiretorioObjetos() . md5('config_' . $this->getApplication()->getProjeto());
+    $lCriarConfiguracoes = file_put_contents($this->sArquivoConfiguracoes, $sConteudoArquivo);
 
-    return file_put_contents($sArquivo, $sConteudoArquivo);
+    if ( !$lCriarConfiguracoes ) {
+      throw new \Exception("Não foi possivel criar arquivo de configurações: $this->sArquivoConfiguracoes");
+    }
+
+    return $lCriarConfiguracoes;
   }
 
 }

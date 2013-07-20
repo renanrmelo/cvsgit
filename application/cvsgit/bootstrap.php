@@ -12,6 +12,8 @@ require_once APPLICATION_DIR . 'cvsgit/command/DiffCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/LogCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/ConfigCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/HistoryCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/command/WhatChangedCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/CvsGitModel.php';
 
 use CVS\CVSApplication as CVS;
 
@@ -36,6 +38,7 @@ try {
     new \CVS\DiffCommand(),
     new \CVS\LogCommand(),
     new \CVS\ConfigCommand(),
+    new \CVS\WhatChangedCommand(),
   ));
 
   /**
