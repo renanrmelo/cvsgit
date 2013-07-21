@@ -10,16 +10,51 @@ class PushCommand extends Command {
 
   private $oConfig;
 
+  /**
+   * Configura comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('push');
     $this->setDescription('Envia modificações para repositório');
     $this->setHelp('Envia modificações para repositório');
+    $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para enviar para o repositorio');
+    $this->addOption('message', 'm', InputOption::VALUE_REQUIRED, 'Mensagem de log do envio' );
   }
 
+  /**
+   * Executa comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
-    $aArquivos = $this->getApplication()->getModel()->getArquivos();
+    $aArquivos = array();
+    $sTituloPush = $oInput->getOption('message');
+    $aArquivosAdicionados = $this->getApplication()->getModel()->getArquivos();
+
+    $aArquivosParaCommit = $oInput->getArgument('arquivos');
+
+    foreach($aArquivosParaCommit as $sArquivo ) {
+
+      $sArquivo = realpath($sArquivo);
+
+      if ( empty($aArquivosAdicionados[ $sArquivo ]) ) {
+        throw new \Exception("Arquivo não encontrado na lista para commit: " . $this->getApplication()->clearPath($sArquivo));
+      }
+
+      $aArquivos[ $sArquivo ] = $aArquivosAdicionados[ $sArquivo ]; 
+    }
+
+    if ( empty($aArquivosParaCommit) ) {
+      $aArquivos = $aArquivosAdicionados;
+    }
 
     $this->oConfig = $this->getApplication()->getConfigProjeto();
 
@@ -206,13 +241,6 @@ class PushCommand extends Command {
      * Remove arquivos já commitados 
      */
     if ( !empty($aArquivosCommitados) ) {
-
-      $sTituloPush = "Commits";
-
-      if ( !empty($iTagRelease) ) {
-        $sTituloPush = "Commits da release com tag: $iTagRelease";
-      }
-
       $this->getApplication()->getModel()->push($aArquivosCommitados, $sTituloPush);
     }
 

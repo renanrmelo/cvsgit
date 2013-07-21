@@ -58,6 +58,12 @@ class StatusCommand extends Command {
     'R' => '-Removido'
   );
 
+  /**
+   * Configura comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('status');
@@ -74,6 +80,14 @@ class StatusCommand extends Command {
     $this->addOption('removed',  'r', InputOption::VALUE_NONE, 'Arquivos removidos pelo comando "cvs rm" e ainda não commitados');
   }
 
+  /**
+   * Executa comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     $lTabela      = false;
@@ -84,6 +98,25 @@ class StatusCommand extends Command {
     $lAdicionados = false;
     $lRemovidos   = false;
     $lPush        = false;
+
+    $lPesquisaCvs = true;
+
+    $aArquivosParaCommit   = array();
+    $aTabelaModificacoes   = array();
+    $aModificacoes         = array();
+    $aRetornoComandoUpdate = array();
+
+    $aModificados  = array();
+    $aCriados      = array();
+    $aAtualizados  = array();
+    $aConflitos    = array();
+    $aAdicionados  = array();
+    $aRemovidos    = array();
+
+    $sStatusOutput       = "";
+    $sStatusOutputTabela = "";
+    $sListaUpdate        = "";
+    $sListaArquivos      = "";
 
     $iParametros = 0;
 
@@ -151,8 +184,24 @@ class StatusCommand extends Command {
     }
 
     /**
-     * Nenhum parametro informado 
-     * - Ou passou somente parametro --table
+     * Passou somente parametro --push
+     * - Nao pesquisa cvs(commando cvs -qn update)
+     */
+    if ( $iParametros == 1 && $lPush ) {
+      $lPesquisaCvs = false;
+    }
+
+    /**
+     * Passou parametros --push e --table
+     * - Nao pesquisa cvs(commando cvs -qn update)
+     */
+    if ( $iParametros == 2 && $lPush && $lTabela ) {
+      $lPesquisaCvs = false;
+    }
+
+    /**
+     * - Nenhum parametro informado 
+     * - Passou somente parametro --table
      */
     if ( $iParametros == 0 || ( $lTabela && $iParametros == 1 ) ) {
 
@@ -170,34 +219,33 @@ class StatusCommand extends Command {
      */
     $aArquivos = $this->getApplication()->getModel()->getArquivos();
 
-    exec('cvs -qn update -dR 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
-
-    if ( $iStatusComandoUpdate > 1 ) {
-
-      $oOutput->writeln('<error>Erro nº ' . $iStatusComandoUpdate. ' ao execurar cvs -qn update -dR:' . "\n" . $this->getApplication()->getLastError() . '</error>');
-      return $iStatusComandoUpdate;
-    }
-
-    $aArquivosParaCommit = array();
-    $aTabelaModificacoes = array();
-    $aModificacoes       = array();
-
-    $aModificados  = array();
-    $aCriados      = array();
-    $aAtualizados  = array();
-    $aConflitos    = array();
-    $aAdicionados  = array();
-    $aRemovidos    = array();
-
-    $sStatusOutput       = "";
-    $sStatusOutputTabela = "";
-    $sListaUpdate        = "";
-    $sListaArquivos      = "";
-
     foreach ($aArquivos as $oCommit) {
       $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->sArquivo);
     }
 
+    /**
+     * Pesquisa modificacoes no cvs apenas se:
+     *  - nenhum parametro informado 
+     *  - não passou somente parametro push
+     */
+    if ( $lPesquisaCvs ) {
+
+      exec('cvs -qn update -dR 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
+
+      /**
+       * Verificação mair que 1 pois quando existem merge cvs retorna status 1
+       * - e merge nao é erro, e sim aviso 
+       */
+      if ( $iStatusComandoUpdate > 1 ) {
+
+        $oOutput->writeln('<error>Erro nº ' . $iStatusComandoUpdate. ' ao execurar cvs -qn update -dR:' . "\n" . $this->getApplication()->getLastError() . '</error>');
+        return $iStatusComandoUpdate;
+      }
+    }
+
+    /**
+     * Parse no retorno do comando cvs update 
+     */
     foreach ($aRetornoComandoUpdate as $sLinhaUpdate) {
 
       $aLinha = explode(' ', $sLinhaUpdate);
@@ -433,6 +481,10 @@ class StatusCommand extends Command {
       }
     }
 
+    /**
+     * Tabela
+     * - Lista modificações em tableas 
+     */
     if ( $lTabela ) {
 
       $oTabela = new \Table();
@@ -461,6 +513,10 @@ class StatusCommand extends Command {
      */
     if ( $lPush ) {
 
+      /**
+       * Tabela
+       * - Lista arquivos prontos para commit em tabela 
+       */
       if ( $lTabela ) {
 
         $lExibirColunaTagRelease = false;
@@ -503,6 +559,10 @@ class StatusCommand extends Command {
         }
       } 
 
+      /**
+       * Sem tabela
+       * - Lista arquivos prontos para commit em linha 
+       */
       if ( !$lTabela) {
 
         foreach ($aArquivos as $oCommit) {
@@ -518,6 +578,9 @@ class StatusCommand extends Command {
 
     }
 
+    /**
+     * Nenhuma modifiação encontrada 
+     */
     if ( empty($sStatusOutput) && empty($sStatusOutputTabela) ) {
 
       $oOutput->writeln('Nenhuma modificação encontrada');

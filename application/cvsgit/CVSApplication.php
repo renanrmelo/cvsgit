@@ -8,9 +8,6 @@ class CVSApplication extends Application {
 
   const VERSION = '1.0';
 
-  public $sProjeto;
-  public $sDiretorioObjetos;
-
   private $oOutput;
   private $oConfig;
   private $oDataBase;
@@ -57,7 +54,7 @@ class CVSApplication extends Application {
   }
 
   /**
-   * @todo - usar um arquivo de config somente
+   * @todo - usar UM arquivo de config somente
    */
   public function getConfigProjeto($sConfig = null) {
 

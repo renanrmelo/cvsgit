@@ -516,9 +516,10 @@ class HistoryCommand extends Command {
       $iVersao = $aLinha[5];
 
       $sArquivo = $aLinha[6];
+      $sProjeto = $this->getApplication()->getModel()->getProjeto()->name; 
 
-      if ( trim($aLinha[7]) != $this->getApplication()->sProjeto) {
-        $sArquivo = str_replace($this->getApplication()->sProjeto . '/', '' , $aLinha[7] . '/' . $aLinha[6]);
+      if ( trim($aLinha[7]) != $sProjeto ) {
+        $sArquivo = str_replace($sProjeto . '/', '' , $aLinha[7] . '/' . $aLinha[6]);
       }
       
       $oTabela->addRow(array($sArquivo, $sTipo, $sAutor, $sData, $sHora, $iVersao));
