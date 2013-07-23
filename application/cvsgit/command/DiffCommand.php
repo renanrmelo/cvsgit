@@ -84,7 +84,7 @@ class DiffCommand extends Command {
       $nPrimeiraVersao = $iVersaoAtual;
     }
 
-    $sProjeto             = $this->getApplication()->sProjeto;
+    $sProjeto             = $this->getApplication()->getModel()->getProjeto()->name;
     $sDiretorioTemporario = '/tmp/cvs-diff/';
     $sSeparador           = '__';
     $sComandoCheckout     = "cvs checkout -r %s $sProjeto/$sArquivo 2> /tmp/cvsgit_last_error";

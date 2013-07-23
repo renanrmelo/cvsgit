@@ -14,7 +14,7 @@ class CvsGitModel {
   public function getProjeto() {
 
     if ( !file_exists('CVS/Repository') ) {
-      throw new \Exception('Diretório atual não é um repositorio CVS.');
+      throw new Exception("Diretório atual não é um repositorio CVS");
     }
 
     $sDiretorioAtual = getcwd();
@@ -45,7 +45,7 @@ class CvsGitModel {
       }
     }   
 
-    throw new \Exception(getcwd() . " não inicializado, utilize o comando cvsgit init");
+    throw new Exception("Diretório atual não inicializado, utilize o comando cvsgit init");
   }
 
   /**
@@ -292,31 +292,6 @@ class CvsGitModel {
       }
 
       $aArquivosCommitados[ $oEnvio->id ] = $oArquivosCommitados;
-    }
-
-    return $aArquivosCommitados;
-
-    $aDadosArquivosCommitados = $this->oFileDataBase->selectAll($sSql);
-
-    foreach ( $aDadosArquivosCommitados as $oDadosCommit ) {
-
-      if ( empty($aArquivosCommitados[$oDadosCommit->id]) ) {
-
-        $oArquivosCommitados = new StdClass();
-        $oArquivosCommitados->title = $oDadosCommit->title;
-        $oArquivosCommitados->date  = $oDadosCommit->date;
-        $oArquivosCommitados->aArquivos = array();
-        $aArquivosCommitados[ $oDadosCommit->id ] = $oArquivosCommitados;
-      }
-
-      $oCommit = new StdClass();
-      $oCommit->name = $oDadosCommit->name;
-      $oCommit->type = $oDadosCommit->type;
-      $oCommit->tag  = $oDadosCommit->tag;
-      $oCommit->message = $oDadosCommit->message;;
-
-      $oArquivosCommitados->aArquivos[] = $oCommit;
-      $aArquivosCommitados[ $oDadosCommit->id ] = $oArquivosCommitados;
     }
 
     return $aArquivosCommitados;

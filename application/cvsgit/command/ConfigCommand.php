@@ -10,6 +10,29 @@ class ConfigCommand extends Command {
 
   private $sArquivoConfiguracoes; 
 
+  /**
+   * Caminho do editor
+   * - usado para editar arquivo json de configuracoes
+   * 
+   * @var string
+   * @access private
+   */
+  private $sCaminhoEditor = '/usr/bin/vim';
+
+  /**
+   * Parametro passados para o editor
+   * 
+   * @var array
+   * @access private
+   */
+  private $aParametrosEditor = array('-c', 'set ft=javascript');
+
+  /**
+   * Configura o comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('config');
@@ -19,6 +42,14 @@ class ConfigCommand extends Command {
     $this->addOption('restart', 'r', InputOption::VALUE_NONE, 'Reiniciar configurações');
   }
 
+  /**
+   * Executa o comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     $this->sArquivoConfiguracoes  = getenv('HOME') . '/.';
@@ -134,7 +165,9 @@ class ConfigCommand extends Command {
     } 
 
     if ($pid == 0 ) { 
-      pcntl_exec('/usr/bin/vim', array($this->sArquivoConfiguracoes, '-c', 'set ft=javascript'));
+
+      array_unshift($this->aParametrosEditor, $this->sArquivoConfiguracoes);
+      pcntl_exec($this->sCaminhoEditor, $this->aParametrosEditor);
     }
 
     pcntl_waitpid($pid, $status);

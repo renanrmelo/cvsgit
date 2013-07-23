@@ -10,7 +10,7 @@ class CVSApplication extends Application {
 
   private $oOutput;
   private $oConfig;
-  private $oDataBase;
+  private $oFileDataBase;
   private $oModel;
 
   public function __construct(\Config $oConfig) {
@@ -19,7 +19,6 @@ class CVSApplication extends Application {
 
     $this->oOutput = new ConsoleOutput();
     $this->oFileDataBase = new \FileDataBase(APPLICATION_DIR . 'cvsgit/cvsgit.db');
-    $this->oModel = new \CvsGitModel($this->oFileDataBase);
     $this->setConfig($oConfig);
   }
 
@@ -98,6 +97,11 @@ class CVSApplication extends Application {
   }
 
   public function getModel() {
+
+    if ( empty($this->oModel) ) {
+      $this->oModel = new \CvsGitModel($this->oFileDataBase);
+    }
+
     return $this->oModel;
   }
 

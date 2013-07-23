@@ -8,6 +8,12 @@ use Symfony\Component\Console\Input\InputOption;
 
 class PullCommand extends Command {
 
+  /**
+   * Configura o comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('pull');
@@ -15,6 +21,14 @@ class PullCommand extends Command {
     $this->setHelp('Baixa atualizações do repositorio');
   }
 
+  /**
+   * Executa comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     $oOutput->write("baixando atualizações...\r");

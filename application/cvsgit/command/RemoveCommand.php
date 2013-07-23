@@ -55,9 +55,15 @@ class RemoveCommand extends Command {
 
     if ( !empty($aArquivosRemover) ) {
 
-      $lRemovido = $this->getApplication()->getModel()->removerArquivos($aArquivosRemover);
-
       foreach( $aArquivosRemover as $sArquivoRemovido ) {
+
+        $sArquivoRemovido = realpath($sArquivoRemovido);
+        $lRemovido = $this->getApplication()->getModel()->removerArquivo($sArquivoRemovido);
+
+        if ( !$lRemovido ) {
+          throw new \Exception('Não foi possivel remover arquivo da lista: ' . $sArquivoRemovido);
+        }
+
         $oOutput->writeln("<info>Arquivo removido da lista: $sArquivoRemovido</info>");
       }
     }
