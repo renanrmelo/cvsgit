@@ -8,24 +8,13 @@ use Symfony\Component\Console\Input\InputOption;
 
 class ConfigCommand extends Command {
 
-  private $sArquivoConfiguracoes; 
-
   /**
-   * Caminho do editor
-   * - usado para editar arquivo json de configuracoes
+   * Arquivo do arquivo de configuracoes
    * 
    * @var string
    * @access private
    */
-  private $sCaminhoEditor = '/usr/bin/vim';
-
-  /**
-   * Parametro passados para o editor
-   * 
-   * @var array
-   * @access private
-   */
-  private $aParametrosEditor = array('-c', 'set ft=javascript');
+  private $sArquivoConfiguracoes; 
 
   /**
    * Configura o comando
@@ -52,8 +41,7 @@ class ConfigCommand extends Command {
    */
   public function execute($oInput, $oOutput) {
 
-    $this->sArquivoConfiguracoes  = getenv('HOME') . '/.';
-    $this->sArquivoConfiguracoes .= basename($this->getApplication()->getModel()->getProjeto()->name) . '_config.json';
+    $this->sArquivoConfiguracoes = CONFIG_DIR . basename($this->getApplication()->getModel()->getProjeto()->name) . '_config.json';
 
     if ( $oInput->getOption('restart') ) {
 
@@ -157,78 +145,12 @@ class ConfigCommand extends Command {
   }
 
   private function editarArquivoConfiguracoes() {
-
-    $pid = pcntl_fork();
-
-    if ($pid == -1) {
-      return 1;
-    } 
-
-    if ($pid == 0 ) { 
-
-      array_unshift($this->aParametrosEditor, $this->sArquivoConfiguracoes);
-      pcntl_exec($this->sCaminhoEditor, $this->aParametrosEditor);
-    }
-
-    pcntl_waitpid($pid, $status);
-    return $status;
+    return $this->binario($this->sArquivoConfiguracoes);
   }
 
   private function criarArquivoConfiguracoes() {
 
-    $sConteudoArquivo  = '/**' . PHP_EOL;
-    $sConteudoArquivo .= ' * ----------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= ' * Configuracoes                                             ' . PHP_EOL;
-    $sConteudoArquivo .= ' * ----------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= ' */ ' . PHP_EOL;
-    $sConteudoArquivo .= '{' . PHP_EOL;
-    $sConteudoArquivo .= PHP_EOL;
-    $sConteudoArquivo .= '  /** ' . PHP_EOL;
-    $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= '   * Tags                                                    ' . PHP_EOL;
-    $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= '   * configuracoes das tags' . PHP_EOL;
-    $sConteudoArquivo .= '   */ ' . PHP_EOL;
-    $sConteudoArquivo .= '  "tag" : { ' . PHP_EOL;
-    $sConteudoArquivo .= '                                                             ' . PHP_EOL;
-    $sConteudoArquivo .= '    /**' . PHP_EOL;
-    $sConteudoArquivo .= '     * tag para usar em todos os commits ' . PHP_EOL;
-    $sConteudoArquivo .= '     *' . PHP_EOL;
-    $sConteudoArquivo .= '     * @var integer | string' . PHP_EOL;
-    $sConteudoArquivo .= '     */' . PHP_EOL;
-    $sConteudoArquivo .= '    "release" : null,' . PHP_EOL;
-    $sConteudoArquivo .= PHP_EOL;
-    $sConteudoArquivo .= '    /**                                                      ' . PHP_EOL;
-    $sConteudoArquivo .= '     * Tags do sprint atual, usada no comentario do commit' . PHP_EOL;
-    $sConteudoArquivo .= '     *' . PHP_EOL;
-    $sConteudoArquivo .= '     * @var array | objetct' . PHP_EOL;
-    $sConteudoArquivo .= '     */' . PHP_EOL;
-    $sConteudoArquivo .= '    "sprint" : [' . PHP_EOL;
-    $sConteudoArquivo .= '    ],' . PHP_EOL;
-    $sConteudoArquivo .= '                                                             ' . PHP_EOL;
-    $sConteudoArquivo .= '    /**' . PHP_EOL;
-    $sConteudoArquivo .= '     * Bloquar commit' . PHP_EOL;
-    $sConteudoArquivo .= '     * Ao usar o comando "cvsgit push" ' . PHP_EOL;
-    $sConteudoArquivo .= '     * caso tag usada pelo comando "cvsgit add -t " for' . PHP_EOL;
-    $sConteudoArquivo .= '     * diferente das tags do sprint, bloqueia push' . PHP_EOL;
-    $sConteudoArquivo .= '     *' . PHP_EOL;
-    $sConteudoArquivo .= '     * @var boolean' . PHP_EOL;
-    $sConteudoArquivo .= '     */ ' . PHP_EOL;
-    $sConteudoArquivo .= '    "bloquearPush" : false' . PHP_EOL;
-    $sConteudoArquivo .= '  },' . PHP_EOL;
-    $sConteudoArquivo .= PHP_EOL;
-    $sConteudoArquivo .= '  /**' . PHP_EOL;
-    $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= '   * Ignorar                                                 ' . PHP_EOL;
-    $sConteudoArquivo .= '   * --------------------------------------------------------' . PHP_EOL;
-    $sConteudoArquivo .= '   * Arquivos para ignorar modificações' . PHP_EOL;
-    $sConteudoArquivo .= '   *' . PHP_EOL;
-    $sConteudoArquivo .= '   * @var array' . PHP_EOL;
-    $sConteudoArquivo .= '   */' . PHP_EOL;
-    $sConteudoArquivo .= '  "ignore" : [' . PHP_EOL;
-    $sConteudoArquivo .= '  ]' . PHP_EOL;
-    $sConteudoArquivo .= PHP_EOL;
-    $sConteudoArquivo .= '}' . PHP_EOL;
+    $sConteudoArquivo = file_get_contents(APPLICATION_DIR . 'cvsgit/install/config.json');
 
     $lCriarConfiguracoes = file_put_contents($this->sArquivoConfiguracoes, $sConteudoArquivo);
 
@@ -237,6 +159,37 @@ class ConfigCommand extends Command {
     }
 
     return $lCriarConfiguracoes;
+  }
+
+  private function binario($sArquivoConfiguracoes) {
+
+    $aParametrosEditor = array();
+    $sMascaraBinario   = $this->getApplication()->getConfig('mascaraBinarioEditorConfiguracoes');
+
+    if ( empty($sMascaraBinario) ) {
+      throw new \Exception("Mascara para binario do editor não encontrado, verifique arquivo de configuração");
+    }
+
+    $aParametrosMascara = \String::tokenize($sMascaraBinario);
+    $sBinario           = array_shift($aParametrosMascara);
+
+    if ( empty($sBinario) ) {
+      throw new \Exception("Arquivo binário para editor não encontrado");
+    }
+
+    /**
+     * Percorre os parametros e inclui arquivos para  
+     */
+    foreach ($aParametrosMascara as $sParametro) {
+
+      if ( $sParametro == '[arquivo]' ) {
+        $sParametro = $sArquivoConfiguracoes;
+      }
+      
+      $aParametrosEditor[] = $sParametro;
+    }
+
+    return pcntl_exec($sBinario, $aParametrosEditor);
   }
 
 }

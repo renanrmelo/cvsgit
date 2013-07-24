@@ -8,10 +8,18 @@ class CvsGitModel {
   public function __construct(FileDataBase $oFileDataBase) {
 
     $this->oFileDataBase = $oFileDataBase;
-    $this->oProjeto = $this->getProjeto();
+    $this->buscarProjeto();
+  }
+
+  public function getFileDataBase() {
+    return $this->oFileDataBase;
   }
 
   public function getProjeto() {
+    return $this->oProjeto;
+  }
+
+  public function buscarProjeto() {
 
     if ( !file_exists('CVS/Repository') ) {
       throw new Exception("Diretório atual não é um repositorio CVS");
@@ -24,24 +32,30 @@ class CvsGitModel {
     foreach( $aProjetos as $oProjeto ) {
 
       /**
-       * Inicio do diretorio atual contem projeto 
-       */
-      if ( strpos($sDiretorioAtual, $oProjeto->path) !== false && strpos($sDiretorioAtual, $oProjeto->path) == 0 ) {
-        return $oProjeto;
-      }
-
-      /**
        * Repositorio 
        */
       if ( $oProjeto->name == $sRepositorio ) {
-        return $oProjeto;
+
+        $this->oProjeto = $oProjeto;
+        return true;
       }
 
       /**
        * Diretorio atual 
        */
       if ( $oProjeto->path == $sDiretorioAtual ) {
-        return $oProjeto;
+
+        $this->oProjeto = $oProjeto;
+        return true;
+      }
+
+      /**
+       * Inicio do diretorio atual contem projeto 
+       */
+      if ( strpos($sDiretorioAtual, $oProjeto->path) !== false && strpos($sDiretorioAtual, $oProjeto->path) == 0 ) {
+
+        $this->oProjeto = $oProjeto;
+        return true;
       }
     }   
 

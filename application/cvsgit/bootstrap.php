@@ -13,16 +13,18 @@ require_once APPLICATION_DIR . 'cvsgit/command/LogCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/ConfigCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/HistoryCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/WhatChangedCommand.php';
-require_once APPLICATION_DIR . 'cvsgit/CvsGitModel.php';
+require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
 
 use CVS\CVSApplication as CVS;
+
+define('CONFIG_DIR', getenv('HOME') . '/.cvsgit/');
 
 try {
 
   /**
    * Instancia app e define arquivo de configração
    */
-  $oCVS = new CVS(new \Config( __DIR__ . '/config.json'));
+  $oCVS = new CVS();
 
   /**
    * Adiciona programas 

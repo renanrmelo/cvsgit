@@ -8,18 +8,11 @@ class CVSApplication extends Application {
 
   const VERSION = '1.0';
 
-  private $oOutput;
   private $oConfig;
-  private $oFileDataBase;
   private $oModel;
 
-  public function __construct(\Config $oConfig) {
-
+  public function __construct() {
     parent::__construct('CVS', CVSApplication::VERSION);
-
-    $this->oOutput = new ConsoleOutput();
-    $this->oFileDataBase = new \FileDataBase(APPLICATION_DIR . 'cvsgit/cvsgit.db');
-    $this->setConfig($oConfig);
   }
 
   /**
@@ -35,7 +28,6 @@ class CVSApplication extends Application {
 
   /**
    * Retorna o ultimo erro dos comandos passados para o shell
-   * @todo incluir last error no banco
    *
    * @access private
    * @return string
@@ -44,20 +36,9 @@ class CVSApplication extends Application {
     return trim(file_get_contents('/tmp/cvsgit_last_error'));
   }
 
-  public function setConfig(\Config $oConfig) {
-    $this->oConfig= $oConfig;
-  }
-
   public function getConfig($sConfig = null) {
-    return $this->oConfig->get($sConfig);
-  }
 
-  /**
-   * @todo - usar UM arquivo de config somente
-   */
-  public function getConfigProjeto($sConfig = null) {
-
-    $sArquivo = getenv('HOME') . '/.' . $this->getModel()->getProjeto()->name . '_config.json';
+    $sArquivo = CONFIG_DIR . $this->getModel()->getProjeto()->name . '_config.json';
 
     if ( !file_exists($sArquivo) ) {
       return null;
@@ -87,19 +68,21 @@ class CVSApplication extends Application {
   }
 
   /**
-   * Retorna o banco de dados
+   * Retorna o model da aplicacao
    *
    * @access public
-   * @return FileDataBase
+   * @return CvsGitModel
    */
-  public function getFileDataBase() {
-    return $this->oFileDataBase;
-  }
-
   public function getModel() {
 
     if ( empty($this->oModel) ) {
-      $this->oModel = new \CvsGitModel($this->oFileDataBase);
+
+      if ( !file_exists(CONFIG_DIR . 'cvsgit.db') ) {
+        throw new \Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
+      }
+
+      $oFileDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
+      $this->oModel = new \CvsGitModel($oFileDataBase);
     }
 
     return $this->oModel;

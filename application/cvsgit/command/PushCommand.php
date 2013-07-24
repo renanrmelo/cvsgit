@@ -56,7 +56,7 @@ class PushCommand extends Command {
       $aArquivos = $aArquivosAdicionados;
     }
 
-    $this->oConfig = $this->getApplication()->getConfigProjeto();
+    $this->oConfig = $this->getApplication()->getConfig();
 
     if ( empty($aArquivos) ) {
 

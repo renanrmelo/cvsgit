@@ -13,114 +13,57 @@ class HistoryCommand extends Command {
   public function configure() {
 
     $this->setName('history');
-    $this->setDescription('Exibe historico');
-    $this->setHelp('Exibe historico');
+    $this->setDescription('Exibe histórico do repositorio');
+    $this->setHelp('Exibe histórico do repositorio');
 
-    $this->addArgument('arquivo', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arquivo para exibir historico');
+    $this->addArgument('arquivos', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arquivo(s) para exibir histórico');
 
-    $this->addOption('tag', 't',  InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Tag');
-    $this->addOption('date', '',  InputOption::VALUE_REQUIRED, 'Data');
-    $this->addOption('user', 'u', InputOption::VALUE_REQUIRED, 'Usuário');
+    $this->addOption('tag',     't', InputOption::VALUE_REQUIRED, 'Tag do commite');
+    $this->addOption('date',    'd', InputOption::VALUE_REQUIRED, 'Data dos commites(formato Y-m-d)');
+    $this->addOption('user',    'u', InputOption::VALUE_REQUIRED, 'Usuário, autor do commit');
+    $this->addOption('message', 'm', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Mensagem de log do commit');
+    $this->addOption('import',  '',  InputOption::VALUE_NONE,     'Importar historioco de alterações do CVS');
   }
 
   public function execute($oInput, $oOutput) {
 
-    $this->sParametroData = $oInput->getOption('date'); 
-    $this->sParametroUsuario = $oInput->getOption('user'); 
+    $lImportarHistorico = $oInput->getOption('import');
+
+    $oParametros = new \StdClass();
+    $oParametros->aArquivos  = $oInput->getArgument('arquivos');
+    $oParametros->iTag       = $oInput->getOption('tag');
+    $oParametros->aMensagens = $oInput->getOption('message');
+    $oParametros->sUsuario   = $oInput->getOption('user');
+    $oParametros->sData      = $oInput->getOption('date');
 
     try {
 
-      $aParametroArquivos = $oInput->getArgument('arquivo');
+      if ( !empty($lImportarHistorico) ) {
 
-      if ( !empty($aParametroArquivos) ) {
-
-        foreach ( $aParametroArquivos as $iChave => $sParametroArquivo) {
-          $aParametroArquivos[$iChave] = $this->getApplication()->clearPath($sParametroArquivo);
-        }
+        $this->importarHistorico();
+        return true;
       }
 
-      $aParametroTag = $oInput->getOption('tag');
-      $aTags = array();
+      $aHistorico = $this->getHistorico($oParametros);
 
-      if ( !empty($aParametroTag) ) {
-
-        foreach ( $aParametroTag as $sParametroTag) {
-          $aTags[] = '-rT' . ltrim(strtoupper($sParametroTag), 'T');
-        }
-      }
-
-      $aHistoricos = array();
-
-      /**
-       * Tag e arquivo 
-       */
-      if ( !empty($aTags) && !empty($aParametroArquivos) ) {
-
-        foreach ( $aTags as $sTag ) {
-
-          foreach ( $aParametroArquivos as $sParametroArquivo) {
-            $aHistoricos[] = $this->getLog($sTag, $sParametroArquivo);
-          }
-        }
-      } 
-
-      /**
-       * Tag 
-       */
-      if ( !empty($aTags) && empty($aParametroArquivos) ) {
-
-        foreach ( $aTags as $sTag ) {
-          $aHistoricos[] = $this->getLog($sTag);
-        }
-      }
-
-      /**
-       * Arquivo 
-       */
-      if ( empty($aTags) && !empty($aParametroArquivos) ) {
-
-        foreach ( $aParametroArquivos as $sParametroArquivo) {
-          $aHistoricos[] = $this->getLogPorArquivo($sParametroArquivo);
-        }
-      } 
-
-      /**
-       * Nenhum 
-       */
-      if ( empty($aTags) && empty($aParametroArquivos) ) {
-        return $this->getHistorico($oOutput);
+      if ( empty($aHistorico) ) {
+        throw new \Exception("Histórico não encontrado.");
       }
 
       $oTabela = new \Table();
       $oTabela->setHeaders(array('Arquivo', 'Autor', 'Data', 'Hora', 'Versão', 'Tag', 'Mensagem'));
 
-      if ( empty($aHistoricos) ) {
-        throw new \Exception("Histórico não encontrado");
-      }
+      foreach( $aHistorico as $oArquivo ) { 
 
-      foreach($aHistoricos as $aHistorico ) {
+        $sArquivo  = $this->getApplication()->clearPath($oArquivo->name);
+        $sAutor    = $oArquivo->author;
+        $sData     = date('d/m/Y', strtotime($oArquivo->date));
+        $sHora     = date('H:i:s', strtotime($oArquivo->date));
+        $sVersao   = $oArquivo->revision;
+        $sTags     = implode(',', $oArquivo->tags);
+        $sMensagem = $oArquivo->message;
 
-        if ( empty($aHistorico) ) {
-          throw new \Exception("Histórico não encontrado");
-        }
-
-        foreach ($aHistorico as $sArquivo => $aHistoricoArquivo) {
-
-          foreach ($aHistoricoArquivo as $oHistorico ) {
-
-            $oTabela->addRow(array(
-              $oHistorico->sArquivo,
-              $oHistorico->sAutor,
-              $oHistorico->sData,
-              $oHistorico->sHora,
-              $oHistorico->iVersao,
-              $oHistorico->sTags,
-              \Encode::toUTF8($oHistorico->sMensagem)
-            ));
-
-          }
-
-        }
+        $oTabela->addRow(array($sArquivo, $sAutor, $sData, $sHora, $sVersao, $sTags, $sMensagem));
       }
 
       $sOutput = $oTabela->render();
@@ -141,7 +84,169 @@ class HistoryCommand extends Command {
     }
   }
 
-  private function getTagsPorVersao($sArquivo, $iParametroVersao) {
+  public function importarHistorico() {
+
+    $aArquivos = $this->getArquivos();
+
+    $oModel = $this->getApplication()->getModel();
+    $oFileDataBase = $oModel->getFileDataBase();
+
+    $oFileDataBase->begin();
+
+    $oFileDataBase->delete('history_file');
+    $oFileDataBase->delete('history_file_tag');
+
+    foreach( $aArquivos as $sArquivo ) {
+
+      $sArquivo = realpath($sArquivo);
+
+      $aDadosLog = $this->getLogPorArquivo($sArquivo);
+      $aTagsPorVersao = $this->getTagsPorVersao($sArquivo);
+
+      foreach ( $aDadosLog as $aDadosArquivo ) {
+
+        foreach ( $aDadosArquivo as $oDadoArquivo ) {
+
+          $data = str_replace('/', '-', $oDadoArquivo->sData . ' ' . $oDadoArquivo->sHora);
+          $data = strtotime($data);
+          $sData = date('Y-m-d H:s:i', $data);
+
+          $aTagsVersao = array();
+
+          if ( !empty($aTagsPorVersao[$oDadoArquivo->iVersao]) ) {
+            $aTagsVersao = $aTagsPorVersao[$oDadoArquivo->iVersao];
+          }
+
+          $iHistorico = $oFileDataBase->insert('history_file', array(
+            'project_id' => $oModel->getProjeto()->id, 
+            'name'       => $sArquivo, 
+            'revision'   => $oDadoArquivo->iVersao, 
+            'message'    => $oDadoArquivo->sMensagem,
+            'author'     => $oDadoArquivo->sAutor,
+            'date'       => $sData 
+          ));
+
+          foreach ( $aTagsVersao as $sTag ) {
+
+            $oFileDataBase->insert('history_file_tag', array(
+              'history_file_id' => $iHistorico,
+              'tag' => $sTag 
+            ));
+          } 
+        }
+
+      }
+
+    }
+
+    $oFileDataBase->commit();
+  }
+
+  public function getHistorico(\StdClass $oParametros = null) {
+
+    $aArquivosHistorico = array();
+    $sWhere = null;
+
+    /**
+     * Busca commites que contenham arquivos enviados por parametro 
+     */
+    if ( !empty($oParametros->aArquivos) ) {
+
+      $sWhere .= " and ( ";
+
+      foreach ( $oParametros->aArquivos as $iIndice => $sArquivo ) {
+
+        if ( $iIndice  > 0 ) {
+          $sWhere .= " or ";
+        }
+
+        $sWhere .= " name like '%$sArquivo%' ";
+      }
+
+      $sWhere .= " ) ";
+    }
+
+    /**
+     * Busca commites com tag 
+     */
+    if ( !empty($oParametros->iTag) ) {
+      $sWhere .= " and tag like '%$oParametros->iTag%'";
+    }
+ 
+    /**
+     * Busca commites por usuario
+     */
+    if ( !empty($oParametros->sUsuario) ) {
+      $sWhere .= " and author like '%$oParametros->sUsuario%'";
+    }
+
+    /**
+     * Busca commites por data 
+     */
+    if ( !empty($oParametros->sData) ) {
+
+      $oParametros->sData = date('Y-m-d', strtotime(str_replace('/', '-', $oParametros->sData)));
+      $sWhere .= " and date between '$oParametros->sData 00:00:00' and '$oParametros->sData 23:59:59' ";
+    }
+
+    /**
+     * Busca commites contendo mensagem 
+     */
+    if ( !empty($oParametros->aMensagens) ) {
+
+      $sWhere .= " and ( ";
+
+      foreach ( $oParametros->aMensagens as $iIndice => $sMensagem ) {
+
+        if ( $iIndice  > 0 ) {
+          $sWhere .= " or ";
+        }
+
+        $sWhere .= " message like '%$sMensagem%' ";
+      }
+
+      $sWhere .= " ) ";
+    }
+
+    $oModel = $this->getApplication()->getModel();
+    $oProjeto = $oModel->getProjeto();
+    $oFileDataBase = $oModel->getFileDataBase();
+
+    $sSqlHistorico = "
+        SELECT history_file.id, name, revision, message, author, date
+          FROM history_file
+               INNER JOIN history_file_tag on history_file_tag.history_file_id = history_file.id
+         WHERE project_id = {$oProjeto->id} $sWhere
+      ORDER BY date 
+    ";
+
+    $aHistoricos = $oFileDataBase->selectAll($sSqlHistorico);
+
+    foreach ( $aHistoricos as $oHistorico ) {
+
+      $oArquivo = new \StdClass();
+      $oArquivo->name     = $oHistorico->name;
+      $oArquivo->revision = $oHistorico->revision;
+      $oArquivo->message  = $oHistorico->message; 
+      $oArquivo->date     = $oHistorico->date; 
+      $oArquivo->author   = $oHistorico->author; 
+      $oArquivo->tags     = array(); 
+
+      $aTagsPorVersao = $oFileDataBase->selectAll("
+        SELECT tag FROM history_file_tag WHERE history_file_id = '{$oHistorico->id}'
+      ");
+
+      foreach ( $aTagsPorVersao as $oTag ) {
+        $oArquivo->tags[] = $oTag->tag;
+      }
+
+      $aArquivosHistorico[ $oHistorico->id ] = $oArquivo;
+    }
+
+    return $aArquivosHistorico;
+  }
+
+  private function getTagsPorVersao($sArquivo, $iParametroVersao = null) {
 
     /**
      * Lista somenta as tags
@@ -192,7 +297,7 @@ class HistoryCommand extends Command {
     }
 
     if ( empty($aTagsPorVersao[$iParametroVersao]) ) {
-      return array();
+      return $aTagsPorVersao;
     }
 
     return $aTagsPorVersao[$iParametroVersao];
@@ -484,7 +589,7 @@ class HistoryCommand extends Command {
     return $aDadosLog;
   }
 
-  private function getHistorico($oOutput) {
+  private function getHistoricoCVS($oOutput) {
 
     $sComando = "cvs history -a -c";
 

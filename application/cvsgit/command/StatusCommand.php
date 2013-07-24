@@ -266,7 +266,7 @@ class StatusCommand extends Command {
       /**
        * Arquivos para ignorar 
        */
-      $aIgnorar = $this->getApplication()->getConfigProjeto('ignore');
+      $aIgnorar = $this->getApplication()->getConfig('ignore');
 
       /**
        * Arquivo está na lista dos ignorados, pula 

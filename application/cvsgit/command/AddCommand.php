@@ -182,7 +182,7 @@ class AddCommand extends Command {
       $oConfiguracao->sArquivo = $sArquivoAdicionar;
 
       if ( empty($oConfiguracao->iTagRelease) ) {
-        $oConfiguracao->iTagRelease = $this->getApplication()->getConfigProjeto('tag')->release;    
+        $oConfiguracao->iTagRelease = $this->getApplication()->getConfig('tag')->release;    
       }
 
       $this->aArquivos[ $sArquivoAdicionar ] = $oConfiguracao;

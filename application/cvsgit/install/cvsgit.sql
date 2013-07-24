@@ -46,3 +46,19 @@ CREATE TABLE IF NOT EXISTS add_files (
   type_short   TEXT            DEFAULT NULL,
   type_full    TEXT            DEFAULT NULL
 );
+
+CREATE TABLE IF NOT EXISTS history_file (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT, 
+  project_id   INTEGER         NOT NULL, 
+  name         TEXT            NOT NULL, 
+  revision     TEXT            DEFAULT NULL, 
+  message      TEXT            DEFAULT NULL,
+  author       TEXT            DEFAULT NULL,
+  date         DATE            DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS history_file_tag (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT, 
+  history_file_id  INTEGER         NOT NULL, 
+  tag              TEXT            DEFAULT NULL
+);

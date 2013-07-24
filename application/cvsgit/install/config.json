@@ -1,0 +1,112 @@
+/**
+ * --------------------------------------------
+ * Configuracoes
+ * --------------------------------------------
+ */
+{
+
+  /** 
+   * --------------------------------------------------------
+   * Tags                                                    
+   * --------------------------------------------------------
+   * configuracoes das tags
+   */ 
+  "tag" : { 
+                                                             
+    /**
+     * tag padrao para usar em todos os commits 
+     *
+     * @var integer | string
+     */
+    "release" : null,
+
+    /**                                                      
+     * Tags do sprint atual, usada no comentario do commit
+     *
+     * @var array | objetct
+     */
+    "sprint" : [
+    ],
+                                                             
+    /**
+     * Bloquar commit
+     * Ao usar o comando "cvsgit push" 
+     * caso tag usada pelo comando "cvsgit add -t " for
+     * diferente das tags do sprint, bloqueia push
+     *
+     * @var boolean
+     */ 
+    "bloquearPush" : false
+  },
+
+  /**
+   * --------------------------------------------------------
+   * Ignorar                                                 
+   * --------------------------------------------------------
+   * Arquivos para ignorar modificaÃ§Ãµes
+   *
+   * @var array
+   */
+  "ignore" : [
+  ],
+
+  /**
+   * ------------------------------------------
+   * Autenticação
+   * ------------------------------------------
+   * Usuario e senha do cvs
+   *
+   * @var string
+   */
+  "login" : "",
+  "senha" : "",
+  
+  /**
+   * -------------------------------------------
+   * Output
+   * -------------------------------------------
+   * Codificacao de saida para o terminal
+   *
+   * @var string
+   */
+  "encodeOutput" : "utf-8",
+
+  /**
+   * ------------------------------------------
+   * Binario diff
+   * ------------------------------------------
+   * marcara para executar binario para diff
+   *
+   * Variaveis que serao substituidas em execucao
+   * [arquivo_1] - arquivo com primeira versao a ser compara
+   * [arquivo_2] - arquivo com segunda versao a ser compara
+   *
+   * @var string
+   */
+  "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'color jellybeans | map <F4> :qa<CR>'",
+
+  /**
+   * ------------------------------------------
+   * Binario editor de configurações
+   * ------------------------------------------
+   * marcara para executar binario do editor
+   * de configuraçoes
+   *
+   * Variavel que sera substituida em execucao
+   * [arquivo] - arquivo de configuracoes
+   *
+   * @var string
+   */
+  "mascaraBinarioEditorConfiguracoes" : "/usr/bin/vim [arquivo] -c 'set filetype=javascript'",
+
+  /**
+   * -------------------------------------------
+   * Senha do usuario root 
+   * -------------------------------------------
+   * usado no comando pull para definir permisao dos arquivos
+   *
+   * @var string
+   */
+  "senhaRoot" : ""
+    
+}

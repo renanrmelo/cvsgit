@@ -88,8 +88,10 @@ class FileDataBase extends PDO {
 		return $this->query(" UPDATE `{$tabela}` SET {$campos} {$where} ");
 	}
 
-	public function delete($tabela, $where) {
-		return $this->exec(" DELETE FROM `{$tabela}` WHERE {$where} ");
+	public function delete($tabela, $where = null) {
+
+		$where = !empty($where) ? 'WHERE ' . $where : null;
+		return $this->exec(" DELETE FROM `{$tabela}` {$where} ");
 	}
 
   public function select($sSql) {
