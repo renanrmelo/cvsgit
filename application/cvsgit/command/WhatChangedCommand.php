@@ -23,7 +23,7 @@ class WhatChangedCommand extends Command {
     $this->setDescription('what changed');
     $this->setHelp('what changed');
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos commitados');
-    $this->addOption('date', 'd', InputOption::VALUE_REQUIRED, 'Data dos commites(formato Y-m-d)' );
+    $this->addOption('date', 'd', InputOption::VALUE_REQUIRED, 'Data dos commites' );
     $this->addOption('tag', 't', InputOption::VALUE_REQUIRED, 'Tag existente nos commites');
     $this->addOption('message', 'm', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Mensagem do arquivo');
   }

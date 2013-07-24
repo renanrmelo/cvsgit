@@ -19,7 +19,7 @@ class HistoryCommand extends Command {
     $this->addArgument('arquivos', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Arquivo(s) para exibir histórico');
 
     $this->addOption('tag',     't', InputOption::VALUE_REQUIRED, 'Tag do commite');
-    $this->addOption('date',    'd', InputOption::VALUE_REQUIRED, 'Data dos commites(formato Y-m-d)');
+    $this->addOption('date',    'd', InputOption::VALUE_REQUIRED, 'Data dos commites');
     $this->addOption('user',    'u', InputOption::VALUE_REQUIRED, 'Usuário, autor do commit');
     $this->addOption('message', 'm', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Mensagem de log do commit');
     $this->addOption('import',  '',  InputOption::VALUE_NONE,     'Importar historioco de alterações do CVS');
