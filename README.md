@@ -3,10 +3,13 @@ console
 
 console app
 
-## Instalação
+### Instalação
 ```bash
 git clone https://github.com/jefersonbelmiro/console.git
 sudo console/install
 ```
 
-## Necessário sqlite3
+### sqlite 3
+```bash
+sudo apt-get install php5-sqlite 
+```
