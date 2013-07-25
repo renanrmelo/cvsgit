@@ -313,7 +313,7 @@ class HistoryCommand extends Command {
     $sSqlHistorico = "
         SELECT history_file.id, name, revision, message, author, date
           FROM history_file
-               INNER JOIN history_file_tag on history_file_tag.history_file_id = history_file.id
+               LEFT JOIN history_file_tag on history_file_tag.history_file_id = history_file.id
          WHERE project_id = {$oProjeto->id} $sWhere
       ORDER BY date 
     ";
