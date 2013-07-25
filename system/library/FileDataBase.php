@@ -76,7 +76,7 @@ class FileDataBase extends PDO {
     return $this->lastInsertId(); 
 	}
 
-	public function update($tabela, Array $dados, $where) {
+	public function update($tabela, Array $dados, $where = null) {
 
 		$where = !empty($where) ? 'WHERE '.$where : null;
 

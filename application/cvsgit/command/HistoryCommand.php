@@ -9,7 +9,17 @@ use Symfony\Component\Console\Input\InputOption;
 class HistoryCommand extends Command {
 
   private $sParametroData;
+  private $oOutput;
+  private $oInput;
+  private $oModel;
+  private $oFileDataBase;
 
+  /**
+   * Configura o comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('history');
@@ -25,6 +35,14 @@ class HistoryCommand extends Command {
     $this->addOption('import',  '',  InputOption::VALUE_NONE,     'Importar historioco de alterações do CVS');
   }
 
+  /**
+   * Executa o comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     $lImportarHistorico = $oInput->getOption('import');
@@ -35,6 +53,11 @@ class HistoryCommand extends Command {
     $oParametros->aMensagens = $oInput->getOption('message');
     $oParametros->sUsuario   = $oInput->getOption('user');
     $oParametros->sData      = $oInput->getOption('date');
+
+    $this->oOutput = $oOutput;
+    $this->oInput = $oInput;
+    $this->oModel = $this->getApplication()->getModel();
+    $this->oFileDataBase = $this->oModel->getFileDataBase();
 
     try {
 
@@ -61,7 +84,7 @@ class HistoryCommand extends Command {
         $sHora     = date('H:i:s', strtotime($oArquivo->date));
         $sVersao   = $oArquivo->revision;
         $sTags     = implode(',', $oArquivo->tags);
-        $sMensagem = $oArquivo->message;
+        $sMensagem = \Encode::toUTF8($oArquivo->message);
 
         $oTabela->addRow(array($sArquivo, $sAutor, $sData, $sHora, $sVersao, $sTags, $sMensagem));
       }
@@ -84,24 +107,100 @@ class HistoryCommand extends Command {
     }
   }
 
+  /**
+   * Retorna a data para importacao
+   * - retorna null quando nao foi importado ainda
+   * - retorna data, caso informado, do parametro --date
+   *
+   * @access public
+   * @return string
+   */
+  public function getDataImportacao() {
+
+    $sParametroData = $this->oInput->getOption('date');
+
+    if ( !empty($sParametroData) ) {
+      return $sParametroData;
+    }
+
+    $oModel = $this->oModel;
+    $oFileDataBase = $this->oFileDataBase;
+
+    $oDataUpdateHistorico = $oFileDataBase->select('select date from history');
+
+    if ( empty($oDataUpdateHistorico) ) {
+
+      $oFileDataBase->insert('history', array('date' => date('Y-m-d')));
+      return null;
+    }
+
+    $oFileDataBase->update('history', array('date' => date('Y-m-d')));
+
+    $oDataUpdateHistorico = $oFileDataBase->select('select date from history');
+    return $oDataUpdateHistorico->date;
+  }
+
+  /**
+   * Importa historicos do CVS para usar em consultas locais
+   *
+   * @access public
+   * @return boolean
+   */
   public function importarHistorico() {
 
-    $aArquivos = $this->getArquivos();
+    $oModel = $this->oModel;
+    $oFileDataBase = $this->oFileDataBase;
 
-    $oModel = $this->getApplication()->getModel();
-    $oFileDataBase = $oModel->getFileDataBase();
+    $this->oOutput->write("\rBuscando arquivos do projeto.");
+
+    /**
+     * Busca arquivos para importar historico
+     * - caso já foi feita importacao, atualiza apartir desta data 
+     */
+    $aArquivos = $this->getArquivos($this->getDataImportacao());
+
+    $iTotalArquivos = count($aArquivos);
+    $iArquivosImportados = 0;
 
     $oFileDataBase->begin();
 
-    $oFileDataBase->delete('history_file');
-    $oFileDataBase->delete('history_file_tag');
-
     foreach( $aArquivos as $sArquivo ) {
 
-      $sArquivo = realpath($sArquivo);
+      $iArquivosImportados++;
+      $sArquivoBusca = getcwd() . '/' . $sArquivo;
+      $sArquivoBusca = str_replace(' ', '\ ', $sArquivoBusca);
 
-      $aDadosLog = $this->getLogPorArquivo($sArquivo);
-      $aTagsPorVersao = $this->getTagsPorVersao($sArquivo);
+      /**
+       * Retorna dados do historico por arquivo 
+       */
+      $aDadosLog = $this->getLogPorArquivo($sArquivoBusca);
+
+      if ( empty($aDadosLog) ) {
+
+        $this->oOutput->writeln("<error>Histórico não encontrado par arquivo: $sArquivoBusca</error>");
+        continue;
+      }
+
+      $this->oOutput->write(
+        "\r" . str_repeat(' ', \Shell::columns()) .
+        "\r[$iArquivosImportados/$iTotalArquivos] Processando arquivo: $sArquivo"
+      );
+
+      $aDadosHistoricoArquivoSalvo = $oFileDataBase->selectAll("
+        SELECT id 
+          FROM history_file 
+         WHERE project_id = " . $oModel->getProjeto()->id . "
+           AND name = '{$sArquivoBusca}' 
+      ");
+
+      if ( !empty($aDadosHistoricoArquivoSalvo) ) {
+
+        foreach( $aDadosHistoricoArquivoSalvo as $oDadosHistoricoArquivoSalvo ) {
+
+          $oFileDataBase->delete('history_file', 'id = ' . $oDadosHistoricoArquivoSalvo->id);
+          $oFileDataBase->delete('history_file_tag', 'history_file_id = ' . $oDadosHistoricoArquivoSalvo->id);
+        }
+      }
 
       foreach ( $aDadosLog as $aDadosArquivo ) {
 
@@ -111,22 +210,16 @@ class HistoryCommand extends Command {
           $data = strtotime($data);
           $sData = date('Y-m-d H:s:i', $data);
 
-          $aTagsVersao = array();
-
-          if ( !empty($aTagsPorVersao[$oDadoArquivo->iVersao]) ) {
-            $aTagsVersao = $aTagsPorVersao[$oDadoArquivo->iVersao];
-          }
-
           $iHistorico = $oFileDataBase->insert('history_file', array(
             'project_id' => $oModel->getProjeto()->id, 
-            'name'       => $sArquivo, 
+            'name'       => $sArquivoBusca, 
             'revision'   => $oDadoArquivo->iVersao, 
             'message'    => $oDadoArquivo->sMensagem,
             'author'     => $oDadoArquivo->sAutor,
             'date'       => $sData 
           ));
 
-          foreach ( $aTagsVersao as $sTag ) {
+          foreach ( $oDadoArquivo->aTags as $sTag ) {
 
             $oFileDataBase->insert('history_file_tag', array(
               'history_file_id' => $iHistorico,
@@ -140,6 +233,11 @@ class HistoryCommand extends Command {
     }
 
     $oFileDataBase->commit();
+    $this->oOutput->write(
+      "\r" . str_repeat(' ', \Shell::columns()) .
+      "\r<info>Histórico de $iArquivosImportados arquivos importado.</info>\n"
+    );
+    return true;
   }
 
   public function getHistorico(\StdClass $oParametros = null) {
@@ -208,7 +306,7 @@ class HistoryCommand extends Command {
       $sWhere .= " ) ";
     }
 
-    $oModel = $this->getApplication()->getModel();
+    $oModel = $this->oModel;
     $oProjeto = $oModel->getProjeto();
     $oFileDataBase = $oModel->getFileDataBase();
 
@@ -303,108 +401,16 @@ class HistoryCommand extends Command {
     return $aTagsPorVersao[$iParametroVersao];
   }
 
-  private function getLog($sParametroTag = null, $sParametroArquivo = null) {
+  private function getArquivos($sDataUpdateHistorico = null) {
+
+    if ( !empty($sDataUpdateHistorico) ) {
+      $sDataUpdateHistorico = "-d'>=$sDataUpdateHistorico'";
+    }
 
     /**
      * Lista informacoes do commit, sem as tags
      */
-    exec('cvs log -S -N ' . $sParametroTag . ' ' . $sParametroArquivo . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
-
-    if ( $iStatusComandoInformacoes > 1 ) {
-
-      Throw new \Exception(
-        'Erro nº ' . $iStatusComandoInformacoes . ' - nao execurar cvs log -N ' . $sParametroArquivo . PHP_EOL .
-        $this->getApplication()->getLastError()
-      );
-    }
-
-    $iLinhaInformacaoCommit = 0;
-    $aLinhasInformacaoCommit = array();
-
-    foreach ( $aRetornoComandoInformacoes as $iIndice => $sLinhaRetorno ) {
-
-      if ( empty($sLinhaRetorno) ) {
-        continue;
-      }
-
-      /**
-       * Versao
-       */
-      if ( strpos($sLinhaRetorno, 'RCS file:') !== false ) {
-
-        $iLinhaInformacaoCommit = 0;
-        continue;
-      }
-
-      $iLinhaInformacaoCommit++;
-
-      $aLinhasInformacaoCommit[$iLinhaInformacaoCommit][] = $sLinhaRetorno;
-    }
-
-    if ( empty($aLinhasInformacaoCommit) ) {
-      return array();
-    }
-
-    $iTotalLinhas = count($aLinhasInformacaoCommit[1]);
-
-    for( $iIndice = 0; $iIndice < $iTotalLinhas; $iIndice++ ) {
-
-      $sArquivo  = '';
-      $sAutor    = '';
-      $sData     = '';
-      $sHora     = '';
-      $iVersao   = '';
-      $sMensagem = '';
-      $sTagsVersao = '';
-
-      $iVersao = trim(str_replace('revision', '', $aLinhasInformacaoCommit[10][$iIndice]));
-
-      $sLinhaDataAutor = strtr($aLinhasInformacaoCommit[11][$iIndice], array('date:' => '', 'author:' => ''));
-      $aLinhaDataAutor = explode(';', $sLinhaDataAutor);
-      $sDataAutor = array_shift($aLinhaDataAutor);
-      $aDataAutor = explode(' ', $sDataAutor);
-
-      $sData  = implode('/', array_reverse(explode('-', $aDataAutor[1])));
-      $sHora  = $aDataAutor[2];
-      $sAutor = trim(array_shift($aLinhaDataAutor));
-
-      $sMensagem = $aLinhasInformacaoCommit[12][$iIndice];
-
-      $sTagsPorVersao = null;
-
-      if ( !empty($aTagsPorVersao[$iVersao]) ) {
-        $sTagsPorVersao = implode(', ', $aTagsPorVersao[$iVersao]);
-      }
-
-      $sArquivo = trim(str_replace('Working file:', '', $aLinhasInformacaoCommit[1][$iIndice]));
-
-      $aTagsVersao = $this->getTagsPorVersao($sArquivo, $iVersao);
-         
-      if ( !empty($aTagsVersao) ) {
-        $sTagsVersao = implode(', ', $aTagsVersao);
-      }
-
-      $oDadosHistorico = new \Stdclass();
-      $oDadosHistorico->sArquivo  = $sArquivo;
-      $oDadosHistorico->sAutor    = $sAutor;
-      $oDadosHistorico->sData     = $sData;
-      $oDadosHistorico->sHora     = $sHora;
-      $oDadosHistorico->iVersao   = $iVersao;
-      $oDadosHistorico->sMensagem = $sMensagem;
-      $oDadosHistorico->sTags     = $sTagsVersao;
-
-      $aHistorico[ $sArquivo ][] = $oDadosHistorico; 
-    }
-
-    return $aHistorico;
-  }
-
-  private function getArquivos() {
-
-    /**
-     * Lista informacoes do commit, sem as tags
-     */
-    exec('cvs log -S -N 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
+    exec('cvs log -S -N ' . $sDataUpdateHistorico . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
 
     if ( $iStatusComandoInformacoes > 1 ) {
 
@@ -434,7 +440,7 @@ class HistoryCommand extends Command {
   public function getLogPorArquivo($sArquivo) {
 
     if ( !file_exists($sArquivo) ) {
-      throw new \Exception("Arquivo inválido: $sArquivo");
+      $this->oOutput->writeln("<error>Arquivo não existe: $sArquivo</error>");
     } 
 
     $sArquivo = $this->getApplication()->clearPath($sArquivo);
@@ -519,7 +525,7 @@ class HistoryCommand extends Command {
       if ( $iLinhaInformacaoCommit == 1 && $iIndice > 11 ) {
 
         if ( !empty($aTagsPorVersao[$iVersao]) ) {
-          $sTagsVersao = implode(', ', $aTagsPorVersao[$iVersao]);
+          $aTagsVersao = $aTagsPorVersao[$iVersao];
         }
 
         $oDadosLog = new \Stdclass();
@@ -529,7 +535,7 @@ class HistoryCommand extends Command {
         $oDadosLog->sData     = $sData;
         $oDadosLog->sHora     = $sHora;
         $oDadosLog->sMensagem = $sMensagem;
-        $oDadosLog->sTags     = $sTagsVersao;
+        $oDadosLog->aTags     = $aTagsVersao;
 
         $aDadosLog[ $sArquivo ][] = $oDadosLog;
 
@@ -538,7 +544,7 @@ class HistoryCommand extends Command {
         $sData     = '';
         $sData     = '';
         $sMensagem = '';
-        $sTagsVersao = '';
+        $aTagsVersao = array();
       }
 
       if ( $iLinhaInformacaoCommit > 0 ) {
@@ -642,7 +648,6 @@ class HistoryCommand extends Command {
     }
 
     $oOutput->writeln($sOutput);
-    exit;
   }
 
 }
