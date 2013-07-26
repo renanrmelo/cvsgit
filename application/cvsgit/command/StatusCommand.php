@@ -251,7 +251,7 @@ class StatusCommand extends Command {
       $aLinha = explode(' ', $sLinhaUpdate);
       $oLinha = new \StdClass();
 
-      $sTipo = trim($aLinha[0]);
+      $sTipo = trim(array_shift($aLinha));
 
       /**
        * Linha não é um tipo de commit: U, ?, C... 
@@ -261,7 +261,7 @@ class StatusCommand extends Command {
       }
 
       $oLinha->sTipo    = $sTipo;
-      $oLinha->sArquivo = trim($aLinha[1]);
+      $oLinha->sArquivo = trim(implode(' ',$aLinha));
 
       /**
        * Arquivos para ignorar 
