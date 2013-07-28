@@ -18,7 +18,8 @@ class RemoveCommand extends Command {
 
   public function execute($oInput, $oOutput) {
 
-    $aArquivos = $this->getApplication()->getModel()->getArquivos();
+    $oArquivoModel = new ArquivoModel();
+    $aArquivos = $oArquivoModel->getAdicionados();
     $aArquivosInformados = $oInput->getArgument('arquivos');
     $aArquivosRemover = array();
 
@@ -58,12 +59,13 @@ class RemoveCommand extends Command {
       foreach( $aArquivosRemover as $sArquivoRemovido ) {
 
         $sArquivoRemovido = realpath($sArquivoRemovido);
-        $lRemovido = $this->getApplication()->getModel()->removerArquivo($sArquivoRemovido);
+        $lRemovido = $oArquivoModel->removerArquivo($sArquivoRemovido);
 
         if ( !$lRemovido ) {
           throw new \Exception('Não foi possivel remover arquivo da lista: ' . $sArquivoRemovido);
         }
 
+        $sArquivoRemovido = $this->getApplication()->clearPath($sArquivoRemovido);
         $oOutput->writeln("<info>Arquivo removido da lista: $sArquivoRemovido</info>");
       }
     }

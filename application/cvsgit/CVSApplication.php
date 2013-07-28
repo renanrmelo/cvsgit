@@ -82,7 +82,7 @@ class CVSApplication extends Application {
       }
 
       $oFileDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
-      $this->oModel = new \CvsGitModel($oFileDataBase);
+      $this->oModel = new CvsGitModel($oFileDataBase);
     }
 
     return $this->oModel;

@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 class AddCommand extends Command {
 
+  private $oArquivoModel;
   private $aArquivos;
   private $aArquivosAdicionar;
   private $oConfiguracaoCommit;
@@ -38,7 +39,9 @@ class AddCommand extends Command {
     $this->oInput  = $oInput;
     $this->oOutput = $oOutput;
 
-    $this->aArquivos = $this->getApplication()->getModel()->getArquivos(); 
+    $this->oArquivoModel = new ArquivoModel();
+
+    $this->aArquivos = $this->oArquivoModel->getAdicionados(); 
     $this->aArquivosAdicionar = array();
 
     $this->processaArgumentos();
@@ -222,7 +225,7 @@ class AddCommand extends Command {
     }
 
     if ( $iArquivosAtualizados > 0 || !empty($this->aArquivosAdicionar) ) {
-      $this->getApplication()->getModel()->salvarArquivos( $this->aArquivos );
+      $this->oArquivoModel->salvarAdicionados( $this->aArquivos );
     }
   }
 

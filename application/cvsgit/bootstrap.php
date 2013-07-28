@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/../../system/bootstrap.php';
 require_once APPLICATION_DIR . 'cvsgit/CVSApplication.php';
-require_once APPLICATION_DIR . 'cvsgit/CVSApplication.php';
 require_once APPLICATION_DIR . 'cvsgit/command/AddCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/command/TagCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/InitCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/PullCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/PushCommand.php';
@@ -13,7 +13,9 @@ require_once APPLICATION_DIR . 'cvsgit/command/LogCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/ConfigCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/HistoryCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/WhatChangedCommand.php';
+
 require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
+require_once APPLICATION_DIR . 'cvsgit/model/ArquivoModel.php';
 
 use CVS\CVSApplication as CVS;
 
@@ -34,6 +36,7 @@ try {
     new \CVS\InitCommand(),
     new \CVS\PushCommand(),
     new \CVS\AddCommand(),
+    new \CVS\TagCommand(),
     new \CVS\RemoveCommand(),
     new \CVS\StatusCommand(),
     new \CVS\PullCommand(),

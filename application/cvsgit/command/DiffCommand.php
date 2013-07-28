@@ -37,12 +37,6 @@ class DiffCommand extends Command {
    */
   public function execute($oInput, $oOutput) {
 
-    if ( empty($this->getApplication()->sProjeto) &&  !file_exists('CVS/Repository') ) {
-
-      $oOutput->writeln('<error>Diretório atual não é um repositório CVS</error>');
-      return 1;
-    }
-
     $sArquivo = $oInput->getArgument('arquivo');
 
     if ( !file_exists($sArquivo) ) {

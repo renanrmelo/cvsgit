@@ -42,8 +42,8 @@ class InitCommand extends Command {
 
     if ( file_exists(CONFIG_DIR . 'cvsgit.db') ) {
 
-      $oFileDataBase = $this->getApplication()->getModel()->getFileDataBase();
-      $aProjetos = $oFileDataBase->selectAll("select name, path from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
+      $oDataBase = $this->getApplication()->getModel()->getDataBase();
+      $aProjetos = $oDataBase->selectAll("select name, path from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
 
       /**
        * Diretorio atual ja inicializado 
@@ -87,17 +87,17 @@ class InitCommand extends Command {
       throw new \Exception("Não foi possivel criar arquivo do banco de dados no diretório: " . CONFIG_DIR );
     }
 
-    $oFileDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
-    $oFileDataBase->begin();
+    $oDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
+    $oDataBase->begin();
 
-    $oFileDataBase->insert('project', array(
+    $oDataBase->insert('project', array(
       'name' => $sRepositorio,
       'path' => $sDiretorioAtual, 
       'date' => date('Y-m-d H:i:s')
     ));
 
     $oOutput->writeln(sprintf('<info>"%s" inicializado</info>', $sRepositorio));
-    $oFileDataBase->commit();
+    $oDataBase->commit();
   }
 
 }

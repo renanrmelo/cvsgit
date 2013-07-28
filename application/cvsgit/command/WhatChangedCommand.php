@@ -44,10 +44,11 @@ class WhatChangedCommand extends Command {
     $oParametros->aMensagens = $oInput->getOption('message');
     $oParametros->sData      = $oInput->getOption('date');
 
-    $aArquivosCommitados = $this->getApplication()->getModel()->getArquivosCommitados($oParametros);
+    $oArquivoModel = new ArquivoModel();
+    $aArquivosCommitados = $oArquivoModel->getCommitados($oParametros); 
 
     if ( empty($aArquivosCommitados) ) {
-      throw new \Exception("Nenhum arquivo commitado ainda.");
+      throw new \Exception("Nenhum arquivo encontrado.");
     }
 
     $oOutput->writeln("");

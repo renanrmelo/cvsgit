@@ -215,9 +215,14 @@ class StatusCommand extends Command {
     }
 
     /**
+     * Model do comando 
+     */
+    $oArquivoModel = new ArquivoModel();
+
+    /**
      * lista dos arquivos adicionados para commit 
      */
-    $aArquivos = $this->getApplication()->getModel()->getArquivos();
+    $aArquivos = $oArquivoModel->getAdicionados(); 
 
     foreach ($aArquivos as $oCommit) {
       $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->sArquivo);

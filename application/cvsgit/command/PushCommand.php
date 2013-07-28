@@ -6,6 +6,8 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
+require_once APPLICATION_DIR . 'cvsgit/model/PushModel.php';
+
 class PushCommand extends Command {
 
   private $oConfig;
@@ -37,7 +39,8 @@ class PushCommand extends Command {
 
     $aArquivos = array();
     $sTituloPush = $oInput->getOption('message');
-    $aArquivosAdicionados = $this->getApplication()->getModel()->getArquivos();
+    $oArquivoModel = new ArquivoModel();
+    $aArquivosAdicionados = $oArquivoModel->getAdicionados();
 
     $aArquivosParaCommit = $oInput->getArgument('arquivos');
 
@@ -238,10 +241,15 @@ class PushCommand extends Command {
     }
 
     /**
-     * Remove arquivos já commitados 
+     * - Salva arquivos commitados 
+     * - Remove arquivos já commitados 
      */
     if ( !empty($aArquivosCommitados) ) {
-      $this->getApplication()->getModel()->push($aArquivosCommitados, $sTituloPush);
+
+      $oPushModel = new PushModel();
+      $oPushModel->setTitulo($sTituloPush);
+      $oPushModel->adicionar($aArquivosCommitados);
+      $oPushModel->salvar();
     }
 
     $oOutput->writeln('');
