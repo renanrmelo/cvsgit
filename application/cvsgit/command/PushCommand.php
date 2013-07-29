@@ -10,6 +10,8 @@ require_once APPLICATION_DIR . 'cvsgit/model/PushModel.php';
 
 class PushCommand extends Command {
 
+  private $oInput;
+  private $oOutput;
   private $oConfig;
 
   /**
@@ -36,6 +38,23 @@ class PushCommand extends Command {
    * @return void
    */
   public function execute($oInput, $oOutput) {
+
+    $this->oInput  = $oInput;
+    $this->oOutput = $oOutput;
+    $this->commitarArquivos();
+    $this->tagArquivos();
+  }
+
+  public function tagArquivos() {
+
+    $oOutput = $this->oOutput;
+    $oInput = $this->oInput;
+  }
+
+  public function commitarArquivos() {
+
+    $oOutput = $this->oOutput;
+    $oInput = $this->oInput;
 
     $aArquivos = array();
     $sTituloPush = $oInput->getOption('message');

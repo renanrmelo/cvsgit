@@ -310,7 +310,7 @@ class HistoryCommand extends Command {
           FROM history_file
                LEFT JOIN history_file_tag on history_file_tag.history_file_id = history_file.id
          WHERE project_id = {$oProjeto->id} $sWhere
-      ORDER BY date, name 
+      ORDER BY name, date DESC 
     ";
 
     $aHistoricos = $oDataBase->selectAll($sSqlHistorico);
@@ -527,7 +527,6 @@ class HistoryCommand extends Command {
         $oLogArquivo = $aLogArquivo[ $sArquivo ]->aLog[ $iVersao ];
         $oLogArquivo->sMensagem = $sLinhaLog;
 
-        $sArquivo = null;
         $iVersao = 0;
         $aTagsVersao = array();
         $lLinhaMensagem = false;

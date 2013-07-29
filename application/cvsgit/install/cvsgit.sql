@@ -33,6 +33,13 @@ CREATE TABLE IF NOT EXISTS add_files (
   type_full    TEXT            DEFAULT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tag_files (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT, 
+  project_id   INTEGER         NOT NULL, 
+  file         TEXT            NOT NULL, 
+  tag          TEXT            DEFAULT NULL
+);
+
 CREATE TABLE IF NOT EXISTS history (
   id    INTEGER PRIMARY KEY AUTOINCREMENT, 
   date  DATE            DEFAULT NULL

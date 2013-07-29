@@ -30,7 +30,7 @@ class CvsGitModel {
   public function buscarProjeto() {
 
     if ( !file_exists('CVS/Repository') ) {
-      throw new Exception("Diretório atual não é um repositorio CVS");
+      throw new \Exception("Diretório atual não é um repositorio CVS");
     }
 
     $sDiretorioAtual = getcwd();
