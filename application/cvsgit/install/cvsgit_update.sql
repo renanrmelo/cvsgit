@@ -1,10 +1,8 @@
 
-CREATE TABLE IF NOT EXISTS project (
-  id      INTEGER PRIMARY KEY AUTOINCREMENT, 
-  name    TEXT            NOT NULL, 
-  path    TEXT            DEFAULT NULL, 
-  date    DATE            DEFAULT NULL
-);
+ALTER TABLE pull             RENAME TO pull_bkp;
+ALTER TABLE pull_files       RENAME TO pull_files_bkp;
+ALTER TABLE history_file     RENAME TO history_file_bkp;
+ALTER TABLE history_file_tag RENAME TO history_file_tag_bkp;
 
 CREATE TABLE IF NOT EXISTS pull (
   id         INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -28,29 +26,6 @@ CREATE TABLE IF NOT EXISTS pull_files (
 
 CREATE INDEX pull_files_pull_in ON pull_files(pull_id);
 
-CREATE TABLE IF NOT EXISTS add_files (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT, 
-  project_id   INTEGER         NOT NULL, 
-  file         TEXT            NOT NULL, 
-  tag_message  TEXT            DEFAULT NULL,
-  tag_file     TEXT            DEFAULT NULL,
-  message      TEXT            DEFAULT NULL,
-  type_short   TEXT            DEFAULT NULL,
-  type_full    TEXT            DEFAULT NULL
-);
-
-CREATE TABLE IF NOT EXISTS tag_files (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT, 
-  project_id   INTEGER         NOT NULL, 
-  file         TEXT            NOT NULL, 
-  tag          TEXT            DEFAULT NULL
-);
-
-CREATE TABLE IF NOT EXISTS history (
-  id    INTEGER PRIMARY KEY AUTOINCREMENT, 
-  date  DATE            DEFAULT NULL
-);
-
 CREATE TABLE IF NOT EXISTS history_file (
   id           INTEGER PRIMARY KEY AUTOINCREMENT, 
   project_id   INTEGER         NOT NULL, 
@@ -72,3 +47,13 @@ CREATE TABLE IF NOT EXISTS history_file_tag (
 );
 
 CREATE INDEX history_file_tag_history_file_in ON history_file_tag(history_file_id);
+
+INSERT INTO pull             SELECT * FROM pull_bkp;
+INSERT INTO pull_files       SELECT * FROM pull_files_bkp;
+INSERT INTO history_file     SELECT * FROM history_file_bkp;
+INSERT INTO history_file_tag SELECT * FROM history_file_tag_bkp;
+
+DROP TABLE pull_bkp;
+DROP TABLE pull_files_bkp;
+DROP TABLE history_file_bkp;
+DROP TABLE history_file_tag_bkp;
