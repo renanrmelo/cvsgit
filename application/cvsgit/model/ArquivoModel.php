@@ -68,6 +68,29 @@ class ArquivoModel extends CvsGitModel {
     $this->getDataBase()->commit();
   }
 
+  public function taggearAdicionados(Array $aArquivos, $iTag) {
+
+    $this->getDataBase()->begin();
+
+    $aArquivosTaggeados = array();
+
+    /**
+     * Salva no banco os arquivos com suas configurações de commit 
+     */
+    foreach ($aArquivos as $oArquivo) {
+
+      $this->getDataBase()->update('add_files', array(
+        'tag_file' => $iTag
+      ), "file='$oArquivo->sArquivo'");
+
+      $aArquivosTaggeados[] = $oArquivo->sArquivo;
+    } 
+
+    $this->getDataBase()->commit();
+
+    return $aArquivosTaggeados;
+  }
+
   /**
    * Remove arquivos da lista para commit
    *
