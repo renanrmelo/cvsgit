@@ -5,9 +5,16 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Exception, Encode, Table;
 
 class LogCommand extends Command {
 
+  /**
+   * Configura o comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('log');
@@ -16,16 +23,17 @@ class LogCommand extends Command {
     $this->addArgument('arquivo', InputArgument::REQUIRED, 'Arquivo para exibir log dos commits');
   }
 
+  /**
+   * Executa o comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     $sArquivo = $oInput->getArgument('arquivo');
-
-    if ( !file_exists($sArquivo) ) {
-
-      $oOutput->writeln("<error>Arquivo inválido: $sArquivo</error>");
-      return 1;
-    } 
-
     $sArquivo = $this->getApplication()->clearPath($sArquivo);
 
     /**
@@ -34,10 +42,7 @@ class LogCommand extends Command {
     exec('cvs log -h ' . $sArquivo . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoTags, $iStatusComandoTags);
 
     if ( $iStatusComandoTags > 0 ) {
-
-      $oOutput->writeln('<error>Erro ao execurar cvs log -h ' . $sArquivo . '</error>');
-      $oOutput->writeln('<error>' . $this->getApplication()->getLastError() . '</error>');
-      return $iStatusComandoTags;
+      throw new Exception('Erro ao execurar cvs log -h ' . $sArquivo . PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoTags);
     }
 
     $aTagsPorVersao = array();
@@ -83,15 +88,16 @@ class LogCommand extends Command {
 
     if ( $iStatusComandoInformacoes > 0 ) {
 
-      $oOutput->writeln('<error>Erro ao execurar cvs log -N ' . $sArquivo . '</error>');
-      $oOutput->writeln('<error>' . $this->getApplication()->getLastError() . '</error>');
-      return $iStatusComandoInformacoes;
+      throw new Exception(
+        'Erro ao execurar cvs log -N ' . $sArquivo . PHP_EOL . $this->getApplication()->getLastError(), 
+        $iStatusComandoInformacoes
+      );
     }
 
     $aLog = array();
     $iLinhaInformacaoCommit = 0;
 
-    $oTabela = new \Table();
+    $oTabela = new Table();
     $oTabela->setHeaders(array('Autor', 'Data', 'Versao', 'Tag', 'Mensagem'));
     $aLinhas = array();
 
@@ -114,7 +120,7 @@ class LogCommand extends Command {
           $sTagsPorVersao = implode(', ', $aTagsPorVersao[$iVersao]);
         }
 
-        $oTabela->addRow(array($sAutor, $sData, $iVersao, $sTagsPorVersao, \Encode::toUTF8($sMensagem)));
+        $oTabela->addRow(array($sAutor, $sData, $iVersao, $sTagsPorVersao, Encode::toUTF8($sMensagem)));
         $iVersao   = '';
         $sAutor    = '';
         $sData     = '';
@@ -164,7 +170,7 @@ class LogCommand extends Command {
       }
     }
 
-    $sOutput = \Encode::toUTF8($oTabela->render());
+    $sOutput = Encode::toUTF8($oTabela->render());
 
     $iColunas  = array_sum($oTabela->getWidths()); 
     $iColunas += count($oTabela->getWidths()) * 2;

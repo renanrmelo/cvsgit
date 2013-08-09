@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Exception, String;
 
 class DiffCommand extends Command {
 
@@ -19,7 +20,7 @@ class DiffCommand extends Command {
     $this->setName('diff');
     $this->setDescription('Exibe diferenças entre versões do arquivo');
     $this->setHelp(
-      'Exibe diferenças entre verões do arquivo' . PHP_EOL .
+      'Exibe diferenças entre versões do arquivo' . PHP_EOL .
       'Caso nenhuma versão for informada, compara versão local com ultima do repositorio'
     );
     $this->addArgument('arquivo', InputArgument::REQUIRED, 'Arquivo para comparação');
@@ -40,8 +41,7 @@ class DiffCommand extends Command {
     $sArquivo = $oInput->getArgument('arquivo');
 
     if ( !file_exists($sArquivo) ) {
-
-      $oOutput->writeln("<error>Arquivo não existe: $sArquivo</error>");
+      throw new Exception("Arquivo não existe: $sArquivo");
     }
 
     $nPrimeiraVersao = $oInput->getArgument('primeira_versao');
@@ -59,9 +59,9 @@ class DiffCommand extends Command {
 
       if ( $iStatusComandoInformacoes > 0 ) {
 
-        $oOutput->writeln("<error>Erro ao execurar cvs log -N $sArquivo</error>");
-        $oOutput->writeln("<error>" . $this->getApplication()->getLastError() . "</error>");
-        return $iStatusComandoInformacoes;
+        throw new Exception(
+          "Erro ao execurar cvs log -N $sArquivo". PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoInformacoes
+        );
       }
 
       $iVersaoAtual = null;
@@ -89,9 +89,7 @@ class DiffCommand extends Command {
      * Cria diretorio temporario
      */
     if ( !is_dir($sDiretorioTemporario) && !mkdir($sDiretorioTemporario, 0777, true) ) {
-
-      $oOutput->writeln("</error>Não foi possivel criar diretório temporario: $sDiretorioTemporario</error>");
-      return 1;
+      throw new Exception("Não foi possivel criar diretório temporario: $sDiretorioTemporario");
     }
 
     /**
@@ -104,9 +102,10 @@ class DiffCommand extends Command {
      */
     if ( $iStatusCheckout > 0 || !file_exists("$sProjeto/$sArquivo") ) {
 
-      $oOutput->writeln('<error>Erro ao executar checkout da versão "' . $nPrimeiraVersao . '"</error>');
-      $oOutput->writeln("<error>" . $this->getApplication()->getLastError() . "</error>");
-      return $iStatusCheckout;
+      throw new Exception(
+        'Erro ao executar checkout da versão "' . $nPrimeiraVersao . '"' . PHP_EOL . $this->getApplication()->getLastError(),
+        $iStatusCheckout
+      );
     }
 
     /**
@@ -116,9 +115,7 @@ class DiffCommand extends Command {
     exec(sprintf($sComandoMover . ' 2> /tmp/cvsgit_last_error', $nPrimeiraVersao), $aRetornoMover, $iStatusMover);
 
     if ( $iStatusMover > 0 ) {
-
-      $oOutput->writeln('<error>Erro ao executar: ' . sprintf($sComandoMover, $nPrimeiraVersao) . '</error>');
-      return $iStatusMover;
+      throw new Exception('Erro ao executar: ' . sprintf($sComandoMover, $nPrimeiraVersao), $iStatusMover);
     }
 
     $sArquivoPrimeiraVersao = $sDiretorioTemporario . "[" . $nPrimeiraVersao ."] " . basename($sArquivo);
@@ -133,9 +130,8 @@ class DiffCommand extends Command {
 
       if ( empty($sDiffPrimeiraVersao) ) {
 
-        $oOutput->writeln('<error>Nenhuma diferença com a versão ' . $nPrimeiraVersao . '</error>');
         exec($sComandoMoverProjeto);
-        return 1;
+        throw new Exception('Nenhuma diferença com a versão ' . $nPrimeiraVersao);
       }
 
       exec($sComandoMoverProjeto);
@@ -150,10 +146,10 @@ class DiffCommand extends Command {
 
     if ( $iStatusCheckout > 0 || !file_exists("$sProjeto/$sArquivo") ) {
 
-      $oOutput->writeln('<error>Erro ao executar checkout da versão "' . $nSegundaVersao . '"</error>');
-      $oOutput->writeln("<error>" . $this->getApplication()->getLastError() . "</error>");
       exec($sComandoMoverProjeto);
-      return 1;
+      throw new Exception(
+        'Erro ao executar checkout da versão "' . $nSegundaVersao . '"' . PHP_EOL . $this->getApplication()->getLastError()
+      );
     }
 
     /**
@@ -163,9 +159,7 @@ class DiffCommand extends Command {
     exec(sprintf($sComandoMover . ' 2> /tmp/cvsgit_last_error', $nSegundaVersao), $aRetornoMover, $iStatusMover);
 
     if ( $iStatusMover > 0 ) {
-
-      $oOutput->writeln('<error>Erro ao executar: ' . sprintf($sComandoMover, $nSegundaVersao) . '</error>');
-      return 1;
+      throw new Exception('Erro ao executar: ' . sprintf($sComandoMover, $nSegundaVersao));
     }
 
     $sArquivoSegundaVersao = $sDiretorioTemporario . "[" . $nSegundaVersao . "] " . basename($sArquivo);
@@ -174,9 +168,7 @@ class DiffCommand extends Command {
     $sDiffDuasVersoes = trim(file_get_contents('/tmp/cvsgit_diff'));
 
     if ( empty($sDiffDuasVersoes) ) {
-
-      $oOutput->writeln('<error>Nenhuma diferença entre as versões ' . $nPrimeiraVersao . ' e ' . $nSegundaVersao . '</error>');
-      return 1;
+      throw new Exception('Nenhuma diferença entre as versões ' . $nPrimeiraVersao . ' e ' . $nSegundaVersao);
     }
 
     exec($sComandoMoverProjeto);
@@ -197,14 +189,14 @@ class DiffCommand extends Command {
     $sMascaraBinario = $this->getApplication()->getConfig('mascaraBinarioDiff');
 
     if ( empty($sMascaraBinario) ) {
-      throw new \Exception("Mascara para binario do diff não encontrado, verifique arquivo de configuração");
+      throw new Exception("Mascara para binario do diff não encontrado, verifique arquivo de configuração");
     }
 
-    $aParametrosMascara = \String::tokenize($sMascaraBinario);
+    $aParametrosMascara = String::tokenize($sMascaraBinario);
     $sBinario           = array_shift($aParametrosMascara);
 
     if ( empty($sBinario) ) {
-      throw new \Exception("Arquivo binário para diff não encontrado");
+      throw new Exception("Arquivo binário para diff não encontrado");
     }
 
     /**

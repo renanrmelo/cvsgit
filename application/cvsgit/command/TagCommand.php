@@ -18,7 +18,7 @@ class TagCommand extends Command {
   public function configure() {
 
     $this->setName('tag');
-    $this->setDescription('Lista, cria e remove tags');
+    $this->setDescription('Altera tag dos arquivos já adicionados para commit(comando cvsgit add)');
     $this->addArgument('tag', InputArgument::REQUIRED, 'Tag do arquivo');
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para alterar tags');
     $this->setHelp('Altera tag dos arquivos já adicionados para commit(comando cvsgit add)');
