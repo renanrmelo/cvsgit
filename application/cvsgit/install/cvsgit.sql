@@ -47,8 +47,9 @@ CREATE TABLE IF NOT EXISTS tag_files (
 );
 
 CREATE TABLE IF NOT EXISTS history (
-  id    INTEGER PRIMARY KEY AUTOINCREMENT, 
-  date  DATE            DEFAULT NULL
+  id          INTEGER PRIMARY KEY AUTOINCREMENT, 
+  project_id  INTEGER NOT NULL, 
+  date        DATE    DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS history_file (

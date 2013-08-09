@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Exception, Stdclass, Encode, Table;
 
 class HistoryCommand extends Command {
 
@@ -46,7 +47,7 @@ class HistoryCommand extends Command {
 
     $lImportarHistorico = $oInput->getOption('import');
 
-    $oParametros = new \StdClass();
+    $oParametros = new StdClass();
     $oParametros->aArquivos  = $oInput->getArgument('arquivos');
     $oParametros->iTag       = $oInput->getOption('tag');
     $oParametros->aMensagens = $oInput->getOption('message');
@@ -65,10 +66,10 @@ class HistoryCommand extends Command {
     $aHistorico = $this->getHistorico($oParametros);
 
     if ( empty($aHistorico) ) {
-      throw new \Exception("Histórico não encontrado.");
+      throw new Exception("Histórico não encontrado.");
     }
 
-    $oTabela = new \Table();
+    $oTabela = new Table();
     $oTabela->setHeaders(array('Arquivo', 'Autor', 'Data', 'Hora', 'Versão', 'Tag', 'Mensagem'));
 
     foreach( $aHistorico as $oArquivo ) { 
@@ -79,7 +80,7 @@ class HistoryCommand extends Command {
       $sHora     = date('H:i:s', strtotime($oArquivo->date));
       $sVersao   = $oArquivo->revision;
       $sTags     = implode(',', $oArquivo->tags);
-      $sMensagem = \Encode::toUTF8($oArquivo->message);
+      $sMensagem = Encode::toUTF8($oArquivo->message);
 
       $oTabela->addRow(array($sArquivo, $sAutor, $sData, $sHora, $sVersao, $sTags, $sMensagem));
     }
@@ -103,6 +104,7 @@ class HistoryCommand extends Command {
    * - retorna null quando nao foi importado ainda
    * - retorna data, caso informado, do parametro --date
    *
+   * @todo - separar logica do metodo, get que da update?
    * @access public
    * @return string
    */
@@ -115,18 +117,19 @@ class HistoryCommand extends Command {
     }
 
     $oDataBase = $this->oDataBase;
+    $iProjeto  = $this->oModel->getProjeto()->id;
 
-    $oDataUpdateHistorico = $oDataBase->select('select date from history');
+    $oDataUpdateHistorico = $oDataBase->select('select date from history where project_id = ' . $iProjeto);
 
     if ( empty($oDataUpdateHistorico) ) {
 
-      $oDataBase->insert('history', array('date' => date('Y-m-d')));
+      $oDataBase->insert('history', array('date' => date('Y-m-d'), 'project_id' => $iProjeto));
       return null;
     }
 
-    $oDataBase->update('history', array('date' => date('Y-m-d')));
+    $oDataBase->update('history', array('date' => date('Y-m-d')), 'project_id = ' . $iProjeto);
 
-    $oDataUpdateHistorico = $oDataBase->select('select date from history');
+    $oDataUpdateHistorico = $oDataBase->select('select date from history where project_id = ' . $iProjeto);
     return $oDataUpdateHistorico->date;
   }
 
@@ -231,11 +234,11 @@ class HistoryCommand extends Command {
   /**
    * Retorna o historico do repositorio atual
    *
-   * @param \StdClass $oParametros
+   * @param StdClass $oParametros
    * @access public
    * @return array
    */
-  public function getHistorico(\StdClass $oParametros = null) {
+  public function getHistorico(StdClass $oParametros = null) {
 
     $aArquivosHistorico = array();
     $sWhere = null;
@@ -317,7 +320,7 @@ class HistoryCommand extends Command {
 
     foreach ( $aHistoricos as $oHistorico ) {
 
-      $oArquivo = new \StdClass();
+      $oArquivo = new StdClass();
       $oArquivo->name     = $oHistorico->name;
       $oArquivo->revision = $oHistorico->revision;
       $oArquivo->message  = $oHistorico->message; 
@@ -366,7 +369,7 @@ class HistoryCommand extends Command {
     exec($sComandoLog, $aRetornoComando, $iStatusComando);
 
     if ( $iStatusComando > 0 ) {
-      throw new \Exception( 'Erro ao execurar: ' . $sComandoLog . PHP_EOL . $this->getApplication()->getLastError() );
+      throw new Exception( 'Erro ao execurar: ' . $sComandoLog . PHP_EOL . $this->getApplication()->getLastError() );
     }
 
     $aLogArquivo       = array();
@@ -391,7 +394,7 @@ class HistoryCommand extends Command {
       if ( strpos($sLinhaLog, 'Working file:') !== false ) {
 
         $sArquivo = trim(str_replace('Working file:', '', $sLinhaLog));
-        $aLogArquivo[ $sArquivo ] = new \StdClass(); 
+        $aLogArquivo[ $sArquivo ] = new StdClass(); 
         $aLogArquivo[ $sArquivo ]->sArquivo = $sArquivo;
 
         $lLinhaVersaoAtual = true;
@@ -480,7 +483,7 @@ class HistoryCommand extends Command {
           $aTagsVersao = $aTagsPorVersao[$iVersao];
         }
 
-        $oLogArquivo = new \StdClass();
+        $oLogArquivo = new StdClass();
         $oLogArquivo->iVersao = $iVersao; 
         $oLogArquivo->aTags = $aTagsVersao; 
 

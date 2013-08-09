@@ -772,20 +772,22 @@ class Application
 
         do {
             
-            $title = 'error';
-            $aErros = array(
-              'Exception'                => 'Erro',
-              'LogicException'           => 'Erro',
-              'RuntimeException'         => 'Erro',
-              'InvalidArgumentException' => 'Argumento inválido',
-              'PDOException'             => 'PDO'
-            );
+            //$title = 'error';
+            //$aErros = array(
+            //  'Exception'                => 'Erro',
+            //  'LogicException'           => 'Erro',
+            //  'RuntimeException'         => 'Erro',
+            //  'InvalidArgumentException' => 'Argumento inválido',
+            //  'PDOException'             => 'PDO'
+            //);
 
-            $title = get_class($e);
+            //$title = get_class($e) . ' - You Tá The Brinqueichon Uite Me?';
 
-            if ( !empty($aErros[$title]) ) {
-              $title = $aErros[$title];
-            }
+            //if ( !empty($aErros[$title]) ) {
+            //  $title = $aErros[$title];
+            //}
+
+            $title = 'You Tá The Brinqueichon Uite Me?';
 
             $title = sprintf(' [%s] ', $title);
             $len = $strlen($title);

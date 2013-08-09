@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Exception;
 
 class InitCommand extends Command {
 
@@ -19,7 +20,7 @@ class InitCommand extends Command {
   public function execute($oInput, $oOutput) {
 
     if ( !file_exists('CVS/Repository') ) {
-      throw new \Exception('Diretório atual não é um repositorio CVS.');
+      throw new Exception('Diretório atual não é um repositorio CVS.');
     }
 
     $sDiretorioAtual = getcwd();
@@ -29,13 +30,13 @@ class InitCommand extends Command {
 
       if ( file_exists(CONFIG_DIR . 'cvsgit.db') ) {
         if ( !unlink(CONFIG_DIR . 'cvsgit.db') ) {
-          throw new \Exception("Não foi possivel remover banco de dados: " . CONFIG_DIR . 'cvsgit.db');
+          throw new Exception("Não foi possivel remover banco de dados: " . CONFIG_DIR . 'cvsgit.db');
         }
       }
 
       if ( file_exists(CONFIG_DIR . $sRepositorio . '_config.json') ) {
         if ( !unlink(CONFIG_DIR . $sRepositorio . '_config.json') ) {
-          throw new \Exception("Não foi possivel remover configurações: " . CONFIG_DIR . $sRepositorio . '_config.json');
+          throw new Exception("Não foi possivel remover configurações: " . CONFIG_DIR . $sRepositorio . '_config.json');
         }
       }
     }
@@ -72,19 +73,19 @@ class InitCommand extends Command {
     }
 
     if ( !is_dir(CONFIG_DIR) && !mkdir(CONFIG_DIR) ) {
-      throw new \Exception('Não foi possivel criar diretório: ' . CONFIG_DIR);
+      throw new Exception('Não foi possivel criar diretório: ' . CONFIG_DIR);
     }
 
     $lArquivoConfiguracoes = copy(APPLICATION_DIR . 'cvsgit/install/config.json', CONFIG_DIR . $sRepositorio . '_config.json');
 
     if ( !$lArquivoConfiguracoes ) {
-      throw new \Exception("Não foi possivel criar arquivo de configurações no diretório: " . CONFIG_DIR );
+      throw new Exception("Não foi possivel criar arquivo de configurações no diretório: " . CONFIG_DIR );
     }
 
     $lArquivoBancoDados = copy(APPLICATION_DIR . 'cvsgit/install/cvsgit.db', CONFIG_DIR . 'cvsgit.db');
 
     if ( !$lArquivoBancoDados ) {
-      throw new \Exception("Não foi possivel criar arquivo do banco de dados no diretório: " . CONFIG_DIR );
+      throw new Exception("Não foi possivel criar arquivo do banco de dados no diretório: " . CONFIG_DIR );
     }
 
     $oDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
