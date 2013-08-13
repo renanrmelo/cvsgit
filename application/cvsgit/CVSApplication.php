@@ -3,6 +3,7 @@ namespace CVS;
 
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Config, FileDataBase, Exception;
 
 class CVSApplication extends Application {
 
@@ -44,7 +45,7 @@ class CVSApplication extends Application {
       return null;
     }
 
-    $oConfig = new \Config($sArquivo);
+    $oConfig = new Config($sArquivo);
 
     if ( is_null($sConfig) ) {
       return $oConfig;
@@ -78,10 +79,10 @@ class CVSApplication extends Application {
     if ( empty($this->oModel) ) {
 
       if ( !file_exists(CONFIG_DIR . 'cvsgit.db') ) {
-        throw new \Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
+        throw new Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
       }
 
-      $oFileDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
+      $oFileDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
       $this->oModel = new CvsGitModel($oFileDataBase);
     }
 

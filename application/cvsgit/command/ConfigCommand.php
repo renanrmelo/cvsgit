@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Config, String, Exception;
 
 class ConfigCommand extends Command {
 
@@ -63,13 +64,13 @@ class ConfigCommand extends Command {
       $iStatus = $this->editarArquivoConfiguracoes();
 
       if ( $iStatus > 0 ) {
-        throw new \Exception('Não foi possivel editar configurações');
+        throw new Exception('Não foi possivel editar configurações');
       }
 
-      return;
+      return $iStatus;
     }
 
-    $oConfig = new \Config($this->sArquivoConfiguracoes);
+    $oConfig = new Config($this->sArquivoConfiguracoes);
 
     $sOutput       = PHP_EOL;
     $aIgnore       = $oConfig->get('ignore');
@@ -155,7 +156,7 @@ class ConfigCommand extends Command {
     $lCriarConfiguracoes = file_put_contents($this->sArquivoConfiguracoes, $sConteudoArquivo);
 
     if ( !$lCriarConfiguracoes ) {
-      throw new \Exception("Não foi possivel criar arquivo de configurações: $this->sArquivoConfiguracoes");
+      throw new Exception("Não foi possivel criar arquivo de configurações: $this->sArquivoConfiguracoes");
     }
 
     return $lCriarConfiguracoes;
@@ -164,21 +165,33 @@ class ConfigCommand extends Command {
   private function binario($sArquivoConfiguracoes) {
 
     $aParametrosEditor = array();
-    $sMascaraBinario   = $this->getApplication()->getConfig('mascaraBinarioEditorConfiguracoes');
 
-    if ( empty($sMascaraBinario) ) {
-      throw new \Exception("Mascara para binario do editor não encontrado, verifique arquivo de configuração");
-    }
-
-    $aParametrosMascara = \String::tokenize($sMascaraBinario);
-    $sBinario           = array_shift($aParametrosMascara);
-
-    if ( empty($sBinario) ) {
-      throw new \Exception("Arquivo binário para editor não encontrado");
+    /**
+     * Tenta pegar as configuracoes atuais
+     * - caso json estiver incorreto usar mascara padrao(a que está no catch) 
+     */
+    try {
+      $sMascaraBinario = $this->getApplication()->getConfig('mascaraBinarioEditorConfiguracoes');
+    } catch(Exception $oErro) {
+      $sMascaraBinario = "/usr/bin/vim [arquivo] -c 'set filetype=javascript'";
     }
 
     /**
-     * Percorre os parametros e inclui arquivos para  
+     * Arquivo de json valido mas sem a propriedade mascaraBinarioEditorConfiguracoes 
+     */
+    if ( empty($sMascaraBinario) ) {
+      throw new Exception("Mascara para binario do editor não encontrado, verifique arquivo de configuração");
+    }
+
+    $aParametrosMascara = String::tokenize($sMascaraBinario);
+    $sBinario           = array_shift($aParametrosMascara);
+
+    if ( empty($sBinario) ) {
+      throw new Exception("Arquivo binário para editor não encontrado");
+    }
+
+    /**
+     * Percorre os parametros e substitui [arquivo] pelo arquivo de configuracoes
      */
     foreach ($aParametrosMascara as $sParametro) {
 
