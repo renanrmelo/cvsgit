@@ -83,7 +83,7 @@
    *
    * @var string
    */
-  "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'color jellybeans | map <F4> :qa<CR>'",
+  "mascaraBinarioDiff" : "/usr/bin/vim -d [arquivo_1] [arquivo_2] -c 'map <F4> :qa<CR>'",
 
   /**
    * ------------------------------------------

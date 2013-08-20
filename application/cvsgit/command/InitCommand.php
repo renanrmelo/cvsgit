@@ -5,10 +5,16 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Exception;
+use Exception, FileDataBase;
 
 class InitCommand extends Command {
 
+  /**
+   * Configura o comando
+   *
+   * @access public
+   * @return void
+   */
   public function configure() {
 
     $this->setName('init');
@@ -17,6 +23,14 @@ class InitCommand extends Command {
     $this->addOption('force', 'f', InputOption::VALUE_NONE, 'Forçar inicialização do diretório');
   }
 
+  /**
+   * Executa comando
+   *
+   * @param Object $oInput
+   * @param Object $oOutput
+   * @access public
+   * @return void
+   */
   public function execute($oInput, $oOutput) {
 
     if ( !file_exists('CVS/Repository') ) {
@@ -43,7 +57,7 @@ class InitCommand extends Command {
 
     if ( file_exists(CONFIG_DIR . 'cvsgit.db') ) {
 
-      $oDataBase = $this->getApplication()->getModel()->getDataBase();
+      $oDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
       $aProjetos = $oDataBase->selectAll("select name, path from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
 
       /**
@@ -88,7 +102,7 @@ class InitCommand extends Command {
       throw new Exception("Não foi possivel criar arquivo do banco de dados no diretório: " . CONFIG_DIR );
     }
 
-    $oDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
+    $oDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
     $oDataBase->begin();
 
     $oDataBase->insert('project', array(

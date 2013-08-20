@@ -15,7 +15,7 @@ class FileDataBase extends PDO {
      * Arquivo do banco nao existe 
      */
     if ( !file_exists($sArquivoBanco) ) {
-      throw new \Exception("Arquivo não existe: $sArquivoBanco");
+      throw new Exception("Arquivo não existe: $sArquivoBanco");
     }
 
     parent::__construct('sqlite:' . $sArquivoBanco);
