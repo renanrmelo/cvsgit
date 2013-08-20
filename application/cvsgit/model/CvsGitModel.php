@@ -1,6 +1,8 @@
 <?php
 namespace CVS;
 
+use Exception, FileDataBase;
+
 class CvsGitModel {
 
   protected static $oDataBase;
@@ -9,12 +11,12 @@ class CvsGitModel {
   public function __construct() {
 
     if ( !file_exists(CONFIG_DIR . 'cvsgit.db') ) {
-      throw new \Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
+      throw new Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
     }
 
     if ( empty(self::$oDataBase) || empty(self::$oProjeto) ) {
 
-      self::$oDataBase = new \FileDataBase(CONFIG_DIR . 'cvsgit.db');
+      self::$oDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
       $this->buscarProjeto();
     }
   }
@@ -30,7 +32,7 @@ class CvsGitModel {
   public function buscarProjeto() {
 
     if ( !file_exists('CVS/Repository') ) {
-      throw new \Exception("Diretório atual não é um repositorio CVS");
+      throw new Exception("Diretório atual não é um repositorio CVS");
     }
 
     $sDiretorioAtual = getcwd();

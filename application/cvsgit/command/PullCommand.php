@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Exception;
 
 class PullCommand extends Command {
 
@@ -35,7 +36,10 @@ class PullCommand extends Command {
 
     exec('cvs update -dR 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
 
-    if ( $iStatusComandoUpdate > 0 ) {
+    /**
+     * Caso CVS encontre conflito, retorna erro 1
+     */
+    if ( $iStatusComandoUpdate > 1 ) {
 
       $oOutput->writeln('<error>Erro nº ' . $iStatusComandoUpdate. ' ao execurar cvs update -dR:' . "\n" . $this->getApplication()->getLastError() . '</error>');
       return $iStatusComandoUpdate;
@@ -61,7 +65,7 @@ class PullCommand extends Command {
     exec($sComandoRoot . 'chmod 777 -R ' . getcwd() . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoPermissoes, $iStatusComandoPermissoes);
 
     if ( $iStatusComandoPermissoes > 0 ) {
-      throw new \Exception("Erro ao atualizar permissões dos arquivos, verifique arquivo de log");
+      throw new Exception("Erro ao atualizar permissões dos arquivos, verifique arquivo de log");
     }
 
   }
