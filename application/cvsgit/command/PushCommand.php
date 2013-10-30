@@ -123,13 +123,13 @@ class PushCommand extends Command {
         $sMensagem = $sErro;
         $iErros++;
       }
-
+      /*
       if ( empty($oCommit->iTag) ) {
 
         $aMensagemErro[$sArquivo][] = "Tag não informada";
         $iTag = $sErro . $oCommit->iTag;
         $iErros++;
-      }
+      }*/
 
       if ( !empty($oCommit->iTag) && !empty($aTagSprint) && !in_array($oCommit->iTag, $aTagSprint) ) {
 
@@ -292,6 +292,11 @@ class PushCommand extends Command {
     }
 
     $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
+    
+    if ( empty($iTag) ) {
+      return;
+    }
+    
     return \Encode::toUTF8("cvs tag -F T{$iTag} " . $sArquivoCommit);
   }
 
