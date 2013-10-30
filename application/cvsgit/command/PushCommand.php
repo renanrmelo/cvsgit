@@ -308,8 +308,13 @@ class PushCommand extends Command {
 
   private function commitArquivo($oCommit) {
 
-    $sMensagemCommit = $oCommit->sMensagem;
-    $sMensagemCommit = "$oCommit->sTipoAbreviado: $sMensagemCommit ($oCommit->sTipoCompleto #$oCommit->iTag)";
+    $sMsgTag         = '';
+    $sTagMsgCommit   = " #$oCommit->iTag";
+    if( empty( $oCommit->iTag ) ){
+      $sTagMsgCommit = "";
+    }
+    
+    $sMensagemCommit = "$oCommit->sTipoAbreviado: $sMensagemCommit ({$oCommit->sTipoCompleto}$sTagMsgCommit)";
     $sMensagemCommit = str_replace("'", '"', $sMensagemCommit);
     $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
     return \Encode::toUTF8("cvs commit -m '$sMensagemCommit' " . $sArquivoCommit);
