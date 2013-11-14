@@ -13,6 +13,7 @@ require_once APPLICATION_DIR . 'cvsgit/command/LogCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/ConfigCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/HistoryCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/WhatChangedCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/command/AnnotateCommand.php';
 
 require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
 require_once APPLICATION_DIR . 'cvsgit/model/ArquivoModel.php';
@@ -44,6 +45,7 @@ try {
     new \CVS\LogCommand(),
     new \CVS\ConfigCommand(),
     new \CVS\WhatChangedCommand(),
+    new \CVS\AnnotateCommand(),
   ));
 
   /**

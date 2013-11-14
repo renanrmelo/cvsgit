@@ -34,7 +34,7 @@ class PullCommand extends Command {
 
     $oOutput->write("baixando atualizações...\r");
 
-    exec('cvs update -dR 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
+    exec('cvs update -dRP 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
 
     /**
      * Caso CVS encontre conflito, retorna erro 1
