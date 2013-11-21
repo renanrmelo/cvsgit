@@ -39,10 +39,10 @@ class LogCommand extends Command {
     /**
      * Lista somenta as tags
      */
-    exec('cvs log -h ' . $sArquivo . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoTags, $iStatusComandoTags);
+    exec('cvs log -h ' . escapeshellarg($sArquivo) . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoTags, $iStatusComandoTags);
 
     if ( $iStatusComandoTags > 0 ) {
-      throw new Exception('Erro ao execurar cvs log -h ' . $sArquivo . PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoTags);
+      throw new Exception('Erro ao execurar cvs log -h ' . escapeshellarg($sArquivo) . PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoTags);
     }
 
     $aTagsPorVersao = array();
@@ -84,12 +84,12 @@ class LogCommand extends Command {
     /**
      * Lista informacoes do commit, sem as tags
      */
-    exec('cvs log -N ' . $sArquivo . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
+    exec('cvs log -N ' . escapeshellarg($sArquivo) . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
 
     if ( $iStatusComandoInformacoes > 0 ) {
 
       throw new Exception(
-        'Erro ao execurar cvs log -N ' . $sArquivo . PHP_EOL . $this->getApplication()->getLastError(), 
+        'Erro ao execurar cvs log -N ' . escapeshellarg($sArquivo) . PHP_EOL . $this->getApplication()->getLastError(), 
         $iStatusComandoInformacoes
       );
     }

@@ -396,9 +396,6 @@ class StatusCommand extends Command {
 
       foreach ( $aConflitos as $oArquivoConflito ) {
 
-        if ( in_array($oArquivoConflito->sArquivo, $aArquivosParaCommit) ) {
-          continue;
-        } 
 
         $sArquivosConflito         .= "\n " . $oArquivoConflito->sArquivo;
         $aTabelaModificacoes['C'][] = $oArquivoConflito->sArquivo;

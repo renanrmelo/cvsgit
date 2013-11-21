@@ -297,7 +297,7 @@ class PushCommand extends Command {
       return;
     }
     
-    return \Encode::toUTF8("cvs tag -F T{$iTag} " . $sArquivoCommit);
+    return \Encode::toUTF8("cvs tag -F T{$iTag} " . escapeshellarg($sArquivoCommit));
   }
 
   private function addArquivo($oCommit) {
@@ -317,7 +317,7 @@ class PushCommand extends Command {
     $sMensagemCommit = "$oCommit->sTipoAbreviado: $oCommit->sMensagem ({$oCommit->sTipoCompleto}$sTagMsgCommit)";
     $sMensagemCommit = str_replace("'", '"', $sMensagemCommit);
     $sArquivoCommit  = $this->getApplication()->clearPath($oCommit->sArquivo);
-    return \Encode::toUTF8("cvs commit -m '$sMensagemCommit' " . $sArquivoCommit);
+    return \Encode::toUTF8("cvs commit -m '$sMensagemCommit' " . escapeshellarg($sArquivoCommit));
   }
 
   private function getTagsSprint() {

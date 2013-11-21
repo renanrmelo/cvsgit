@@ -55,12 +55,12 @@ class DiffCommand extends Command {
       /**
        * Lista informacoes do commit, sem as tags
        */
-      exec('cvs log -N ' . $sArquivo . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
+      exec('cvs log -N ' . escapeshellarg($sArquivo) . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
 
       if ( $iStatusComandoInformacoes > 0 ) {
 
         throw new Exception(
-          "Erro ao execurar cvs log -N $sArquivo". PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoInformacoes
+          "Erro ao execurar cvs log -N " . escapeshellarg($sArquivo) . PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoInformacoes
         );
       }
 
@@ -81,8 +81,8 @@ class DiffCommand extends Command {
     $sProjeto             = $this->getApplication()->getModel()->getProjeto()->name;
     $sDiretorioTemporario = '/tmp/cvs-diff/';
     $sSeparador           = '__';
-    $sComandoCheckout     = "cvs checkout -r %s $sProjeto/$sArquivo 2> /tmp/cvsgit_last_error";
-    $sComandoMover        = "mv {$sProjeto}/{$sArquivo} {$sDiretorioTemporario}[%s]\ " . basename($sArquivo);
+    $sComandoCheckout     = "cvs checkout -r %s $sProjeto/" . escapeshellarg($sArquivo) . " 2> /tmp/cvsgit_last_error";
+    $sComandoMover        = "mv {$sProjeto}/" . escapeshellarg($sArquivo) . " {$sDiretorioTemporario}[%s]\ " . basename($sArquivo);
     $sComandoMoverProjeto = "cp -rf $sProjeto/ $sDiretorioTemporario && rm -rf $sProjeto/";
 
     /**
@@ -100,7 +100,7 @@ class DiffCommand extends Command {
     /**
      * Erro - Primeira versao 
      */
-    if ( $iStatusCheckout > 0 || !file_exists("$sProjeto/$sArquivo") ) {
+    if ( $iStatusCheckout > 0 ) {
 
       throw new Exception(
         'Erro ao executar checkout da versão "' . $nPrimeiraVersao . '"' . PHP_EOL . $this->getApplication()->getLastError(),
@@ -125,7 +125,7 @@ class DiffCommand extends Command {
      */
     if ( empty($nSegundaVersao) ) {
 
-      exec('diff ' . $sArquivo . ' ' . escapeshellarg($sArquivoPrimeiraVersao) . ' > /tmp/cvsgit_diff');
+      exec('diff ' . escapeshellarg($sArquivo) . ' ' . escapeshellarg($sArquivoPrimeiraVersao) . ' > /tmp/cvsgit_diff');
       $sDiffPrimeiraVersao = trim(file_get_contents('/tmp/cvsgit_diff'));
 
       if ( empty($sDiffPrimeiraVersao) ) {
@@ -144,7 +144,7 @@ class DiffCommand extends Command {
      */
     exec(sprintf($sComandoCheckout, $nSegundaVersao), $aRetornoCheckout, $iStatusCheckout);
 
-    if ( $iStatusCheckout > 0 || !file_exists("$sProjeto/$sArquivo") ) {
+    if ( $iStatusCheckout > 0 ) {
 
       exec($sComandoMoverProjeto);
       throw new Exception(
