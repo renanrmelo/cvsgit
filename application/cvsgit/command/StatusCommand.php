@@ -55,7 +55,13 @@ class StatusCommand extends Command {
     /**
      * Apos remover arquivo do projeto, ira remover do servidor se for commitado 
      */
-    'R' => '-Removido'
+    'R' => 'Arquivo marcado para remover',
+      
+    /**
+     * Identifica um arquivo removido localmente
+     */
+    '-' => 'Removido local'
+      
   );
 
   /**
@@ -112,6 +118,7 @@ class StatusCommand extends Command {
     $aConflitos    = array();
     $aAdicionados  = array();
     $aRemovidos    = array();
+    $aRemovidosLocal = array();
 
     $sStatusOutput       = "";
     $sStatusOutputTabela = "";
@@ -285,6 +292,9 @@ class StatusCommand extends Command {
        */
       $aModificacoes[ $sTipo ][] = $oLinha;
 
+      if (strpos($this->getApplication()->getLastError(), "`{$oLinha->sArquivo}'") !== false) {
+        $sTipo = "-";
+      }
       /**
        * Separa em arrays as modificacoes pelo tipo de commit 
        */
@@ -332,6 +342,14 @@ class StatusCommand extends Command {
         case 'R' :
           $aRemovidos[] = $oLinha;
         break;
+        
+        /**
+         * Removido no projeto local
+         */
+        case '-' :
+          $aRemovidosLocal[] = $oLinha;
+        break;
+          
       }
 
     }
@@ -454,13 +472,13 @@ class StatusCommand extends Command {
       if ( !empty($sArquivosAdicionados) ) {
 
         $sStatusOutput .= "\n- Arquivos adicionados: ";
-        $sStatusOutput .= "\n  </info>$sArquivosAdicionados</info>\n";
+        $sStatusOutput .= "\n  <info>$sArquivosAdicionados</info>\n";
       }
     }
 
     /**
      * Removidos
-     * - arquivos removidos e ainda n?o commitados
+     * - arquivos removidos e ainda não commitados
      */
     if ( $lRemovidos ) {
 
@@ -478,8 +496,25 @@ class StatusCommand extends Command {
 
       if ( !empty($sArquivosRemovidos) ) {
 
-        $sStatusOutput .= "\n- Arquivos removidos: ";
-        $sStatusOutput .= "\n </info>$sArquivosRemovidos</info>\n";
+        $sStatusOutput .= "\n- Arquivos marcados como removido: ";
+        $sStatusOutput .= "\n <info>$sArquivosRemovidos</info>\n";
+      }
+      
+      $sArquivosRemovidosLocal = '';
+      foreach ($aRemovidosLocal as $oArquivoRemovidoLocal) {
+        
+        if ( in_array($oArquivoRemovidoLocal->sArquivo, $aArquivosParaCommit) ) {
+          continue;
+        }
+        
+        $sArquivosRemovidosLocal        .= "\n " . $oArquivoRemovidoLocal->sArquivo;
+        $aTabelaModificacoes['-'][] = $oArquivoRemovidoLocal->sArquivo;
+      }
+      
+      if ( !empty($sArquivosRemovidosLocal) ) {
+      
+        $sStatusOutput .= "\n- Arquivos removidos do projeto local: ";
+        $sStatusOutput .= "\n <error>{$sArquivosRemovidosLocal}</error>\n";
       }
     }
 

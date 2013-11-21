@@ -89,4 +89,30 @@ class CVSApplication extends Application {
     return $this->oModel;
   }
 
+  /**
+   * Retorna o ultimo erro ocorrido no servidor CVS
+   * @return string
+   */
+  public function getErrorCvs() {
+    
+    $sMsgErro = "";
+    if (  $this->getConfig('mostraErroCvs') ) {
+      $sMsgErro .= "\n - Erro cvs: \n{$this->getLastError()} ";
+    }
+    return $sMsgErro;
+  }
+  
+  /**
+   * Exibe uma string de erro
+   * @param string $sMensagem mensagem a ser exibida
+   * @param ConsoleOutput $oOutput instancia de ConsoleOutput
+   */
+  public function displayError( $sMensagem, ConsoleOutput $oOutput ) {
+    
+    $sMsgErro  = "<error> - {$sMensagem}";
+    $sMsgErro .= $this->getErrorCvs();
+    $sMsgErro .= "</error>";
+    $oOutput->writeln($sMsgErro);
+  }
+  
 }

@@ -787,7 +787,7 @@ class Application
             //  $title = $aErros[$title];
             //}
 
-            $title = 'You Tá The Brinqueichon Uite Me?';
+            $title = 'You Tá The Brinqueichon Uite Me, cara?';
 
             $title = sprintf(' [%s] ', $title);
             $len = $strlen($title);

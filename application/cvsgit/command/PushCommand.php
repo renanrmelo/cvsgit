@@ -122,14 +122,7 @@ class PushCommand extends Command {
         $aMensagemErro[$sArquivo][] = "Mensagem não informada";
         $sMensagem = $sErro;
         $iErros++;
-      }
-      /*
-      if ( empty($oCommit->iTag) ) {
-
-        $aMensagemErro[$sArquivo][] = "Tag não informada";
-        $iTag = $sErro . $oCommit->iTag;
-        $iErros++;
-      }*/
+      }     
 
       if ( !empty($oCommit->iTag) && !empty($aTagSprint) && !in_array($oCommit->iTag, $aTagSprint) ) {
 
@@ -232,7 +225,7 @@ class PushCommand extends Command {
 
           if ( $iStatusComandoAdd > 0 ) {
 
-            $oOutput->writeln("<error> - Erro ao adicionar arquivo: $sArquivoCommit</error>");
+            $this->getApplication()->displayError("Erro ao adicionar arquivo: {$sArquivoCommit}", $oOutput);
             continue;
           }
         }
@@ -241,7 +234,7 @@ class PushCommand extends Command {
 
         if ( $iStatusComandoCommit > 0 ) {
 
-          $oOutput->writeln("<error> - Erro ao commitar arquivo: $sArquivoCommit</error>");
+          $this->getApplication()->displayError("Erro ao commitar arquivo: {$sArquivoCommit}", $oOutput);
           continue;
         }
 
@@ -249,7 +242,7 @@ class PushCommand extends Command {
 
         if ( $iStatusComandoTag > 0 ) {
 
-          $oOutput->writeln("<error> - Erro ao por tag no arquivo: $sArquivoCommit</error>");
+          $this->getApplication()->displayError("Erro ao por tag no arquivo: {$sArquivoCommit}", $oOutput);
           continue;
         }
         
