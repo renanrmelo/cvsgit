@@ -39,7 +39,7 @@ class CVSApplication extends Application {
 
   public function getConfig($sConfig = null) {
 
-    $sArquivo = CONFIG_DIR . $this->getModel()->getProjeto()->name . '_config.json';
+    $sArquivo = CONFIG_DIR . $this->getModel()->getRepositorio() . '_config.json';
 
     if ( !file_exists($sArquivo) ) {
       return null;
@@ -77,13 +77,7 @@ class CVSApplication extends Application {
   public function getModel() {
 
     if ( empty($this->oModel) ) {
-
-      if ( !file_exists(CONFIG_DIR . 'cvsgit.db') ) {
-        throw new Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
-      }
-
-      $oFileDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
-      $this->oModel = new CvsGitModel($oFileDataBase);
+      $this->oModel = new CvsGitModel();
     }
 
     return $this->oModel;

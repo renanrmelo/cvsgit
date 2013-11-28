@@ -42,98 +42,13 @@ class AddCommand extends Command {
     $this->oArquivoModel = new ArquivoModel();
 
     $this->aArquivos = $this->oArquivoModel->getAdicionados(); 
-    $this->aArquivosAdicionar = array();
-
-    $this->processaArgumentos();
     $this->processarArquivos();
   }
 
-  public function processaArgumentos() {
+  public function processarArquivos() {
 
     $aArquivos = array();
-
-    $oParametros = new \StdClass();
-    $oParametros->sMensagem      = null;
-    $oParametros->iTag           = null;
-    $oParametros->iTagRelease    = null;
-    $oParametros->sTipoAbreviado = null;
-    $oParametros->sTipoCompleto  = null;
-    $oParametros->sArquivo       = null;
-
-    foreach ( $this->oInput->getOptions() as $sArgumento => $sValorArgumento ) {
-
-      if ( empty($sValorArgumento) ) {
-        continue;
-      }
-
-      switch ( $sArgumento ) {
-
-        /**
-         * Mensagem do commit 
-         */
-        case 'message' :
-          $oParametros->sMensagem = $this->oInput->getOption('message');
-        break;
-
-        /**
-         * Tag do commit 
-         */
-        case 'tag' :
-          $oParametros->iTag = ltrim( strtoupper($this->oInput->getOption('tag')), 'T' );
-        break;
-
-        /**
-         * Tag do commit 
-         */
-        case 'tag-commit' :
-
-          $oParametros->iTag = ltrim( strtoupper($this->oInput->getOption('tag-commit')), 'T' );
-          $oParametros->iTagRelease = ltrim( strtoupper($this->oInput->getOption('tag-commit')), 'T' );
-
-        break;
-
-        /**
-         * Commit para adicionar fonte ou funcionalidade
-         */
-        case 'added' :
-
-          $oParametros->sTipoAbreviado = 'ADD';
-          $oParametros->sTipoCompleto  = 'added';
-
-        break;
-
-        /**
-         * Commit para modificacoes do layout ou documentacao 
-         */
-        case 'style' : 
-
-          $oParametros->sTipoAbreviado = 'STYLE';
-          $oParametros->sTipoCompleto  = 'style';
-
-        break;
-
-        /**
-         * Commit para correcao de erros 
-         */ 
-        case 'fixed' : 
-
-          $oParametros->sTipoAbreviado = 'FIX';
-          $oParametros->sTipoCompleto  = 'fixed';
-
-        break;
-
-        /**
-         * Commit para melhorias 
-         */
-        case 'enhanced' : 
-
-          $oParametros->sTipoAbreviado = 'ENH';
-          $oParametros->sTipoCompleto  = 'enhanced';
-
-        break;
-
-      }
-    }
+    $sMensagem = '<info>Arquivo %s: %s</info>';
 
     /**
      * Procura os arquivos para adicionar 
@@ -148,84 +63,112 @@ class AddCommand extends Command {
         continue;
       }
 
-      $this->aArquivosAdicionar[] = realpath($sArquivo);
+      $aArquivos[] = realpath($sArquivo);
     }
 
-    $this->oConfiguracaoCommit = $oParametros;
-  }
+    if ( empty($aArquivos) ) {
+      $aArquivos = array_keys($this->aArquivos);
+    }
 
-  /**
-   * Processa argumentos nos arquivos
-   * - se nao for passado nenhum arquivo nos parametros, atualiza todos
-   *
-   * @access private
-   * @return void
-   */
-  private function processarArquivos() {
+    foreach ( $aArquivos as $sArquivo ) {
 
-    $aArquivosParaConfigurar = array();
-    $sMensagem = '<info>Arquivo %s: %s</info>';
+      $lAdicionado = true;
 
-    /**
-     * Percorre os arquivos passados por parametro e adiciona
-     * ao array de arquivos a serem persistidos
-     */
-    foreach ($this->aArquivosAdicionar as $sArquivoAdicionar) {
+      if ( !empty($this->aArquivos[$sArquivo]) ) {
 
-      /**
-       * Arquivo ja adicionado
-       */
-      if ( array_key_exists($sArquivoAdicionar, $this->aArquivos) ) {
+        $lAdicionado = false;
+        $oArquivo = $this->aArquivos[$sArquivo];
 
-        $aArquivosParaConfigurar[] = $sArquivoAdicionar;
-        continue;
+      } else {
+
+        $oArquivo = new Arquivo();
+        $oArquivo->setArquivo($sArquivo);
       }
 
-      $oConfiguracao = clone $this->oConfiguracaoCommit;
-      $oConfiguracao->sArquivo = $sArquivoAdicionar;
+      foreach ( $this->oInput->getOptions() as $sArgumento => $sValorArgumento ) {
 
-      if ( empty($oConfiguracao->iTagRelease) ) {
-        $oConfiguracao->iTagRelease = $this->getApplication()->getConfig('tag')->release;    
-      }
-
-      $this->aArquivos[ $sArquivoAdicionar ] = $oConfiguracao;
-      $this->oOutput->writeln(sprintf($sMensagem, 'adicionado a lista', $this->getApplication()->clearPath($sArquivoAdicionar)));
-    }
-
-    /**
-     * Não informou arquivo, entao atualiza todos os arquivos 
-     * ja adicionados com parametros inforamdos 
-     */
-    if ( empty($this->aArquivosAdicionar) ) {
-      $aArquivosParaConfigurar = array_keys($this->aArquivos);
-    }
-
-    $iArquivosAtualizados = 0;
-
-    /**
-     * Configura arquivos
-     */
-    foreach ($aArquivosParaConfigurar as $sArquivo ) {
-
-      foreach ( $this->oConfiguracaoCommit as $sConfiguracao => $sValorConfiguracao ) {
-
-        if ( empty($sValorConfiguracao) ) {
+        if ( empty($sValorArgumento) ) {
           continue;
         }
 
-        $this->aArquivos[ $sArquivo ]->$sConfiguracao = $sValorConfiguracao;
-        $iArquivosAtualizados++;
+        switch ( $sArgumento ) {
+
+          /**
+           * Mensagem do commit 
+           */
+          case 'message' :
+            $oArquivo->setMensagem($this->oInput->getOption('message'));
+          break;
+
+          /**
+           * Tag do commit 
+           */
+          case 'tag' :
+            $oArquivo->setTagMensagem(ltrim( strtoupper($this->oInput->getOption('tag')), 'T' ));
+          break;
+
+          /**
+           * Tag do commit 
+           */
+          case 'tag-commit' :
+
+            $iTag = ltrim( strtoupper($this->oInput->getOption('tag-commit')), 'T' );
+            $oArquivo->setTagMensagem($iTag);
+            $oArquivo->setTagArquivo($iTag);
+            $oArquivo->setComando(Arquivo::COMANDO_COMMITAR_TAGGEAR);
+
+          break;
+
+          /**
+           * Commit para adicionar fonte ou funcionalidade
+           */
+          case 'added' :
+            $oArquivo->setTipo('ADD');
+          break;
+
+          /**
+           * Commit para modificacoes do layout ou documentacao 
+           */
+          case 'style' : 
+            $oArquivo->setTipo('STYLE');
+          break;
+
+          /**
+           * Commit para correcao de erros 
+           */ 
+          case 'fixed' : 
+            $oArquivo->setTipo('FIX');
+          break;
+
+          /**
+           * Commit para melhorias 
+           */
+          case 'enhanced' : 
+            $oArquivo->setTipo('ENH');
+          break;
+
+        }
       }
 
-      $this->aArquivos[ $sArquivo ]->sArquivo = $sArquivo;
+      $iTagArquivo = $oArquivo->getTagArquivo();
+      $iTagRelease = $this->getApplication()->getConfig()->get('tag')->release; 
 
-      if ( $iArquivosAtualizados > 0 ) {
+      if ( empty($iTagArquivo) && !empty($iTagRelease) ) {
+        $oArquivo->setTagArquivo($iTagRelease);
+      }
+
+      $this->aArquivos[$sArquivo] = $oArquivo;
+
+      if ( $lAdicionado ) {
+        $this->oOutput->writeln(sprintf($sMensagem, 'adicionado a lista', $this->getApplication()->clearPath($sArquivo)));
+      } else {
         $this->oOutput->writeln(sprintf($sMensagem, 'atualizado', $this->getApplication()->clearPath($sArquivo)));
       }
+
     }
 
-    if ( $iArquivosAtualizados > 0 || !empty($this->aArquivosAdicionar) ) {
-      $this->oArquivoModel->salvarAdicionados( $this->aArquivos );
+    if ( !empty($this->aArquivos) ) {
+      $this->oArquivoModel->salvarAdicionados($this->aArquivos);
     }
   }
 

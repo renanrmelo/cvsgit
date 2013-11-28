@@ -38,26 +38,40 @@ class InitCommand extends Command {
     }
 
     $sDiretorioAtual = getcwd();
-    $sRepositorio = trim(file_get_contents('CVS/Repository'));
+    $sRepositorio    = trim(file_get_contents('CVS/Repository'));
+    $sArquivoBanco   = CONFIG_DIR . $sRepositorio .  '.db';
+    $sArquivoConfig  = CONFIG_DIR . $sRepositorio . '_config.json';
 
+    /**
+     * Força inicialização do projeto 
+     */
     if ( $oInput->getOption('force') ) {
 
-      if ( file_exists(CONFIG_DIR . 'cvsgit.db') ) {
-        if ( !unlink(CONFIG_DIR . 'cvsgit.db') ) {
-          throw new Exception("Não foi possivel remover banco de dados: " . CONFIG_DIR . 'cvsgit.db');
+      /**
+       * Remove arquivo do banco de dados 
+       */
+      if ( file_exists($sArquivoBanco) ) {
+        if ( !unlink($sArquivoBanco) ) {
+          throw new Exception("Não foi possivel remover banco de dados: " . $sArquivoBanco);
         }
       }
 
-      if ( file_exists(CONFIG_DIR . $sRepositorio . '_config.json') ) {
-        if ( !unlink(CONFIG_DIR . $sRepositorio . '_config.json') ) {
-          throw new Exception("Não foi possivel remover configurações: " . CONFIG_DIR . $sRepositorio . '_config.json');
+      /**
+       * Remove arquivo de configuração 
+       */
+      if ( file_exists($sArquivoConfig) ) {
+        if ( !unlink($sArquivoConfig) ) {
+          throw new Exception("Não foi possivel remover configurações: " . $sArquivoConfig);
         }
       }
     }
 
-    if ( file_exists(CONFIG_DIR . 'cvsgit.db') ) {
+    /**
+     * Arquivo já existe, verifica se projeto já foi inicializado 
+     */
+    if ( file_exists($sArquivoBanco) ) {
 
-      $oDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
+      $oDataBase = new FileDataBase($sArquivoBanco);
       $aProjetos = $oDataBase->selectAll("select name, path from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
 
       /**
@@ -65,44 +79,41 @@ class InitCommand extends Command {
        */
       foreach( $aProjetos as $oProjeto ) {
 
-        /**
-         * Repositorio 
-         */
-        if ( $oProjeto->name == $sRepositorio ) {
+        if ( $oProjeto->name == $sRepositorio || $oProjeto->path == $sDiretorioAtual ) {
 
           $oOutput->writeln(sprintf('<info>"%s" já inicializado</info>', $sRepositorio));
-          return true;
-        }
-
-        /**
-         * Diretorio atual 
-         */
-        if ( $oProjeto->path == $sDiretorioAtual ) {
-
-          $oOutput->writeln(sprintf('<info>"%s" já inicializado</info>', $sDiretorioAtual));
           return true;
         }
       }   
 
     }
 
+    /**
+     * Diretório onde aplicação guarda arquivos de configuracão e banco de dados 
+     */
     if ( !is_dir(CONFIG_DIR) && !mkdir(CONFIG_DIR) ) {
       throw new Exception('Não foi possivel criar diretório: ' . CONFIG_DIR);
     }
 
-    $lArquivoConfiguracoes = copy(APPLICATION_DIR . 'cvsgit/install/config.json', CONFIG_DIR . $sRepositorio . '_config.json');
+    /**
+     * Cria copia do arquivo do banco
+     */
+    $lArquivoConfiguracoes = copy(APPLICATION_DIR . 'cvsgit/install/config.json', $sArquivoConfig);
 
     if ( !$lArquivoConfiguracoes ) {
-      throw new Exception("Não foi possivel criar arquivo de configurações no diretório: " . CONFIG_DIR );
+      throw new Exception("Não foi possivel criar arquivo de configurações no diretório: " . $sArquivoConfig);
     }
 
-    $lArquivoBancoDados = copy(APPLICATION_DIR . 'cvsgit/install/cvsgit.db', CONFIG_DIR . 'cvsgit.db');
+    /**
+     * Cria copia do arquivo de configuracao
+     */
+    $lArquivoBancoDados = copy(APPLICATION_DIR . 'cvsgit/install/cvsgit.db', $sArquivoBanco);
 
     if ( !$lArquivoBancoDados ) {
       throw new Exception("Não foi possivel criar arquivo do banco de dados no diretório: " . CONFIG_DIR );
     }
 
-    $oDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
+    $oDataBase = new FileDataBase($sArquivoBanco);
     $oDataBase->begin();
 
     $oDataBase->insert('project', array(

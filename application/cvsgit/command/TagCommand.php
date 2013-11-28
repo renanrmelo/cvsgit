@@ -19,9 +19,14 @@ class TagCommand extends Command {
 
     $this->setName('tag');
     $this->setDescription('Altera tag dos arquivos já adicionados para commit(comando cvsgit add)');
+    $this->setHelp('Altera tag dos arquivos já adicionados para commit(comando cvsgit add)');
+
     $this->addArgument('tag', InputArgument::REQUIRED, 'Tag do arquivo');
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para alterar tags');
-    $this->setHelp('Altera tag dos arquivos já adicionados para commit(comando cvsgit add)');
+
+    $this->addOption('added',  'a', InputOption::VALUE_NONE, 'Adicionar tag');
+    $this->addOption('delete', 'd', InputOption::VALUE_NONE, 'Deletar tag');
+    $this->addOption('move',   'm', InputOption::VALUE_NONE, 'Mover tag');
   }
 
   /**
@@ -38,31 +43,78 @@ class TagCommand extends Command {
     $aArquivosAdicionados = $oArquivoModel->getAdicionados();
 
     $aArquivos = array();
+    $aOpcoes = array('added', 'delete');
+    $sComando = null;
     $aArquivosParametro = $oInput->getArgument('arquivos');
 
+    /**
+     * Verifica arquivos passados por parametro 
+     */
     foreach($aArquivosParametro as $sArquivo ) {
 
-      $sArquivo = getcwd() . '/' . $sArquivo;
+      if ( !file_exists($sArquivo) ) {
 
-      if ( empty($aArquivosAdicionados[ $sArquivo ]) ) {
-        throw new Exception("Arquivo não encontrado na lista para commit: " . $this->getApplication()->clearPath($sArquivo));
+        $oOutput->writeln("<error>Arquivo não encontradao: $sArquivo</error>");
+        continue;
       }
 
-      $aArquivos[ $sArquivo ] = $aArquivosAdicionados[ $sArquivo ]; 
+      $sArquivo = realpath($sArquivo);
+
+      /**
+       * Arquivo já adicionado a lista, pega ele 
+       */
+      if ( !empty($aArquivosAdicionados[ $sArquivo ]) ) {
+        
+        $aArquivos[$sArquivo] = $aArquivosAdicionados[ $sArquivo ]; 
+        continue;
+      }
+
+      $oArquivo = new Arquivo();
+      $oArquivo->setArquivo($sArquivo);
+
+      /**
+       * Arquivos não adicionados ainda a lista 
+       */
+      $aArquivos[$sArquivo] = $oArquivo; 
     }
 
+    /**
+     * Nenhum arquivo passado por parametro, poe tag em todos os arquivos ja adicionados 
+     */
     if ( empty($aArquivos) ) {
       $aArquivos = $aArquivosAdicionados;
     }
 
+    foreach ( $oInput->getOptions() as $sArgumento => $sValorArgumento ) {
+
+      if ( empty($sValorArgumento) || !in_array($sArgumento, $aOpcoes) ) {
+        continue;
+      }
+
+      if ( !empty($sComando) ) {
+        throw new Exception("Mais de uma comando usado(added, delete)");
+      }
+
+      if ( empty($sComando) ) {
+        $sComando = $sArgumento;
+      }
+    }
+
+    if ( empty($sComando) ) {
+      $sComando = 'added';
+    }
+
+    /**
+     * Tag do arquivo, sem prefixo T 
+     */
     $iTag = ltrim(strtoupper($oInput->getArgument('tag')), 'T');
 
-    $aArquivosTaggeados = $oArquivoModel->taggearAdicionados($aArquivos, $iTag);
+    $aArquivosTaggeados = $oArquivoModel->taggear($aArquivos, $iTag, $sComando);
 
     if ( !empty($aArquivosTaggeados) ) {
 
       foreach ( $aArquivosTaggeados as $sArquivo ) {
-        $oOutput->writeln("<info>Arquivo taggeado: " . $this->getApplication()->clearPath($sArquivo) . "</info>");
+        $oOutput->writeln("<info>Arquivo com tag atualizada: " . $this->getApplication()->clearPath($sArquivo) . "</info>");
       }
     }
   }

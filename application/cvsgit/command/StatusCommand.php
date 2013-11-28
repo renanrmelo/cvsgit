@@ -232,7 +232,7 @@ class StatusCommand extends Command {
     $aArquivos = $oArquivoModel->getAdicionados(); 
 
     foreach ($aArquivos as $oCommit) {
-      $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->sArquivo);
+      $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->getArquivo());
     }
 
     /**
@@ -292,9 +292,36 @@ class StatusCommand extends Command {
        */
       $aModificacoes[ $sTipo ][] = $oLinha;
 
-      if (strpos($this->getApplication()->getLastError(), "`{$oLinha->sArquivo}'") !== false) {
-        $sTipo = "-";
+      /**
+       * Lista com os erros do comando update 
+       */
+      $aLinhasErros = explode("\n", $this->getApplication()->getLastError());
+
+      /**
+       * Arquivo removido localmente
+       * Percorre as linhas de erro procurando o arquivo 
+       *
+       * @todo - arquivo com ultima versao no cvs como removido nao aparece no update
+       */
+      foreach ( $aLinhasErros as $sLinhaErro ) {
+
+        /**
+         * Encontrou arquivo na linh atual 
+         */
+        if ( strpos($sLinhaErro, "`{$oLinha->sArquivo}'") !== false ) {
+
+          /**
+           * Contei a string lost na linha atual do arquivo 
+           */
+          if ( strpos($sLinhaErro, "lost") !== false ) {
+
+            $sTipo = "-";
+            break;
+          }
+        }
+
       }
+
       /**
        * Separa em arrays as modificacoes pelo tipo de commit 
        */
@@ -556,36 +583,26 @@ class StatusCommand extends Command {
        */
       if ( $lTabela ) {
 
-        $lExibirColunaTagRelease = false;
-
-        foreach ($aArquivos as $oCommit) {
-
-          if ( !empty($oCommit->iTagRelease) ) {
-
-            $lExibirColunaTagRelease = true;
-            break;
-          }
-        }
-
         $oTabelaCommit = new \Table();
-        $oTabelaCommit->setHeaders(array('Arquivo', 'Tag', 'Mensagem', 'Tipo'));
-
-        if ( $lExibirColunaTagRelease ) {
-          $oTabelaCommit->setHeaders(array('Arquivo', 'Tag Mensagem', 'Tag Arquivo', 'Mensagem', 'Tipo'));
-        }
+        $oTabelaCommit->setHeaders(array('Arquivo', 'Tag Mensagem', 'Tag Arquivo', 'Mensagem', 'Tipo'));
 
         foreach ($aArquivos as $oCommit) {
 
-          if ( $lExibirColunaTagRelease ) {
+          $sTipo = $oCommit->getTipo();
 
-            $oTabelaCommit->addRow(array(
-              $this->getApplication()->clearPath($oCommit->sArquivo), $oCommit->iTag, $oCommit->iTagRelease, $oCommit->sMensagem, $oCommit->sTipoCompleto
-            ));
-            continue;
+          switch ( $oCommit->getComando() ) {
+
+            case Arquivo::COMANDO_ADICIONAR_TAG :
+              $sTipo = 'Adicionar tag';
+            break;
+
+            case Arquivo::COMANDO_REMOVER_TAG :
+              $sTipo = 'Remover tag';
+            break;
           }
 
           $oTabelaCommit->addRow(array(
-            $this->getApplication()->clearPath($oCommit->sArquivo), $oCommit->iTag, $oCommit->sMensagem, $oCommit->sTipoCompleto
+            $this->getApplication()->clearPath($oCommit->getArquivo()), $oCommit->getTagMensagem(), $oCommit->getTagArquivo(), $oCommit->getMensagem(), $sTipo
           ));
         }
 
@@ -603,7 +620,7 @@ class StatusCommand extends Command {
       if ( !$lTabela) {
 
         foreach ($aArquivos as $oCommit) {
-          $sListaArquivos .= "\n " . $this->getApplication()->clearPath($oCommit->sArquivo) . " ";
+          $sListaArquivos .= "\n " . $this->getApplication()->clearPath($oCommit->getArquivo()) . " ";
         }
 
         if ( !empty($sListaArquivos) ) {

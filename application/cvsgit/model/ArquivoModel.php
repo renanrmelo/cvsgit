@@ -1,7 +1,10 @@
 <?php
 namespace CVS;
 
+use Exception;
+
 require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
+require_once APPLICATION_DIR . 'cvsgit/model/Arquivo.php';
 
 class ArquivoModel extends CvsGitModel {
 
@@ -18,13 +21,13 @@ class ArquivoModel extends CvsGitModel {
 
     foreach( $aArquivosSalvos as $oDadosArquivo) {
 
-      $oArquivo = new \StdClass();
-      $oArquivo->sArquivo       = $oDadosArquivo->file;
-      $oArquivo->iTag           = $oDadosArquivo->tag_message;
-      $oArquivo->iTagRelease    = $oDadosArquivo->tag_file;
-      $oArquivo->sMensagem      = $oDadosArquivo->message;
-      $oArquivo->sTipoAbreviado = $oDadosArquivo->type_short;
-      $oArquivo->sTipoCompleto  = $oDadosArquivo->type_full;
+      $oArquivo = new Arquivo();
+      $oArquivo->setArquivo($oDadosArquivo->file);
+      $oArquivo->setTagMensagem($oDadosArquivo->tag_message);
+      $oArquivo->setTagArquivo($oDadosArquivo->tag_file);
+      $oArquivo->setMensagem($oDadosArquivo->message);
+      $oArquivo->setTipo($oDadosArquivo->type);
+      $oArquivo->setComando((int) $oDadosArquivo->command);
 
       $aArquivos[$oDadosArquivo->file] = $oArquivo;
     }
@@ -44,10 +47,12 @@ class ArquivoModel extends CvsGitModel {
 
     $this->getDataBase()->begin();
 
+    $sComandosCommitar = Arquivo::COMANDO_COMMITAR_TAGGEAR . ", " . Arquivo::COMANDO_COMMITAR;
+
     /**
      * Remove todos os arquivos daquele projeto antes de incluir 
      */
-    $this->getDataBase()->delete('add_files', 'project_id = ' . $this->getProjeto()->id);
+    $this->getDataBase()->delete('add_files', 'command in('. $sComandosCommitar .') AND project_id = ' . $this->getProjeto()->id);
 
     /**
      * Salva no banco os arquivos com suas configurações de commit 
@@ -56,34 +61,63 @@ class ArquivoModel extends CvsGitModel {
 
       $this->getDataBase()->insert('add_files', array(
         'project_id'  => $this->getProjeto()->id,
-        'file'        => $oArquivo->sArquivo,
-        'tag_message' => $oArquivo->iTag,
-        'tag_file'    => $oArquivo->iTagRelease,
-        'message'     => $oArquivo->sMensagem,
-        'type_short'  => $oArquivo->sTipoAbreviado,
-        'type_full'   => $oArquivo->sTipoCompleto
+        'file'        => $oArquivo->getArquivo(),
+        'tag_message' => $oArquivo->getTagMensagem(),
+        'tag_file'    => $oArquivo->getTagArquivo(),
+        'message'     => $oArquivo->getMensagem(),
+        'type'        => $oArquivo->getTipo(),
+        'command'     => $oArquivo->getComando(),
       ));
     } 
 
     $this->getDataBase()->commit();
   }
 
-  public function taggearAdicionados(Array $aArquivos, $iTag) {
+  public function taggear(Array $aArquivos, $iTag, $sComando = 'added') {
 
     $this->getDataBase()->begin();
 
     $aArquivosTaggeados = array();
+    $aArquivosAdicionados = $this->getAdicionados();
+
+    switch( $sComando ) {
+
+      case 'delete' :
+        $iCommando = Arquivo::COMANDO_REMOVER_TAG;
+      break;
+
+      case 'added' :
+        $iCommando = Arquivo::COMANDO_ADICIONAR_TAG;
+      break;
+
+      default :
+        throw new Exception("Comando para tagear arquivo inválido: $sComando");
+      break;
+    }
 
     /**
      * Salva no banco os arquivos com suas configurações de commit 
      */
     foreach ($aArquivos as $oArquivo) {
 
-      $this->getDataBase()->update('add_files', array(
-        'tag_file' => $iTag
-      ), "file='$oArquivo->sArquivo'");
+      if ( !empty($aArquivosAdicionados[$oArquivo->getArquivo()]) ) {
 
-      $aArquivosTaggeados[] = $oArquivo->sArquivo;
+        $this->getDataBase()->update('add_files', array(
+          'tag_file' => $iTag,
+          // 'command'  => $iCommando
+        ), "file='" . $oArquivo->getArquivo() . "'");
+
+      } else {
+
+        $this->getDataBase()->insert('add_files', array(
+          'project_id'  => $this->getProjeto()->id,
+          'file'        => $oArquivo->getArquivo(),
+          'tag_file'    => $iTag,
+          'command'     => $iCommando
+        ));
+      }
+
+      $aArquivosTaggeados[] = $oArquivo->getArquivo();
     } 
 
     $this->getDataBase()->commit();

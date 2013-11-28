@@ -7,16 +7,25 @@ class CvsGitModel {
 
   protected static $oDataBase;
   protected static $oProjeto;
+  protected static $sRepositorio;
 
   public function __construct() {
 
-    if ( !file_exists(CONFIG_DIR . 'cvsgit.db') ) {
-      throw new Exception('Projeto ainda não inicializado, utilize o comando cvsgit init');
+    if ( !file_exists('CVS/Repository') ) {
+      throw new Exception("Diretório atual não é um repositorio CVS");
+    }
+
+    if ( empty( self::$sRepositorio) ) {
+      self::$sRepositorio = trim(file_get_contents('CVS/Repository'));
     }
 
     if ( empty(self::$oDataBase) || empty(self::$oProjeto) ) {
 
-      self::$oDataBase = new FileDataBase(CONFIG_DIR . 'cvsgit.db');
+      if ( !file_exists(CONFIG_DIR . $this->getRepositorio() .  '.db') ) {
+        throw new Exception("Diretório atual não inicializado, utilize o comando cvsgit init");
+      }
+
+      self::$oDataBase = new FileDataBase(CONFIG_DIR . $this->getRepositorio() .  '.db');
       $this->buscarProjeto();
     }
   }
@@ -28,32 +37,23 @@ class CvsGitModel {
   public function getProjeto() {
     return self::$oProjeto;
   }
+  
+  public function getRepositorio() {
+    return self::$sRepositorio;
+  }
 
   public function buscarProjeto() {
 
-    if ( !file_exists('CVS/Repository') ) {
-      throw new Exception("Diretório atual não é um repositorio CVS");
-    }
-
     $sDiretorioAtual = getcwd();
-    $sRepositorio = trim(file_get_contents('CVS/Repository'));
-    $aProjetos = self::$oDataBase->selectAll("select * from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
+    $sRepositorio    = $this->getRepositorio();
+    $aProjetos       = self::$oDataBase->selectAll("select * from project where name = '$sRepositorio' or path = '$sDiretorioAtual'");
 
     foreach( $aProjetos as $oProjeto ) {
 
       /**
        * Repositorio 
        */
-      if ( $oProjeto->name == $sRepositorio ) {
-
-        self::$oProjeto = $oProjeto;
-        return true;
-      }
-
-      /**
-       * Diretorio atual 
-       */
-      if ( $oProjeto->path == $sDiretorioAtual ) {
+      if ( $oProjeto->name == $sRepositorio || $oProjeto->path == $sDiretorioAtual ) {
 
         self::$oProjeto = $oProjeto;
         return true;

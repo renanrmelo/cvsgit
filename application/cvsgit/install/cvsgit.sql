@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS pull_files (
 
 CREATE INDEX pull_files_pull_in ON pull_files(pull_id);
 
+/**
+ * type : ENH, FIX, ADD, STYLE
+ * 
+ * command:
+ * - 0 : commit e tag
+ * - 1 : adicionar tag
+ * - 2 : mover tag
+ * - 3 : deletar tag
+ * - 4 : deletar arquivo e tag
+ */
 CREATE TABLE IF NOT EXISTS add_files (
   id           INTEGER PRIMARY KEY AUTOINCREMENT, 
   project_id   INTEGER         NOT NULL, 
@@ -35,8 +45,8 @@ CREATE TABLE IF NOT EXISTS add_files (
   tag_message  TEXT            DEFAULT NULL,
   tag_file     TEXT            DEFAULT NULL,
   message      TEXT            DEFAULT NULL,
-  type_short   TEXT            DEFAULT NULL,
-  type_full    TEXT            DEFAULT NULL
+  type         TEXT            DEFAULT NULL,
+  command      INTEGER         DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS tag_files (

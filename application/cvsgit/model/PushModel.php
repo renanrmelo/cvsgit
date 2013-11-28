@@ -46,24 +46,18 @@ class PushModel extends CvsGitModel {
      */
     foreach ( $aArquivosCommitados as $oCommit ) {
 
-      $iTag = $oCommit->iTag;
-
-      if ( !empty($oCommit->iTagRelease) ) {
-        $iTag = $oCommit->iTagRelease;
-      }
-
       $oDataBase->insert('pull_files', array(
         'pull_id' => $iPull,
-        'name'    => $oCommit->sArquivo,
-        'type'    => $oCommit->sTipoAbreviado,
-        'tag'     => $iTag,
-        'message' => $oCommit->sMensagem
+        'name'    => $oCommit->getArquivo(),
+        'type'    => $oCommit->getTipo(),
+        'tag'     => $oCommit->getTagArquivo(),
+        'message' => $oCommit->getMensagem()
       ));
 
       /**
        * Remove arqui da lista para commit 
        */
-      $oArquivoModel->removerArquivo($oCommit->sArquivo);
+      $oArquivoModel->removerArquivo($oCommit->getArquivo());
     } 
 
     $oDataBase->commit();
