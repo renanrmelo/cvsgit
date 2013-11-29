@@ -16,7 +16,10 @@ class CvsGitModel {
     }
 
     if ( empty( self::$sRepositorio) ) {
-      self::$sRepositorio = trim(file_get_contents('CVS/Repository'));
+
+      $sDiretorioRepositorio = trim(file_get_contents('CVS/Repository'));
+      $aDiretorioRepositorio = explode('/', $sDiretorioRepositorio);
+      self::$sRepositorio = $aDiretorioRepositorio[0];
     }
 
     if ( empty(self::$oDataBase) || empty(self::$oProjeto) ) {
