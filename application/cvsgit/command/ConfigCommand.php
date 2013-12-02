@@ -76,8 +76,6 @@ class ConfigCommand extends Command {
     $aIgnore       = $oConfig->get('ignore');
     $iTagRelease   = $oConfig->get('tag')->release;
     $tagsSprint    = $oConfig->get('tag')->sprint;
-    $sBloquearPush = $oConfig->get('tag')->bloquearPush ? 'Sim' : 'Não';
-
 
     $sOutput .= "- <comment>Arquivo:</comment> " . PHP_EOL;
     $sOutput .= "  " .$this->sArquivoConfiguracoes . PHP_EOL;
@@ -95,7 +93,7 @@ class ConfigCommand extends Command {
     /**
      * Tags 
      */
-    if ( !empty($iTagRelease) || !empty($tagsSprint) || !empty($sBloquearPush) ) {
+    if ( !empty($iTagRelease) || !empty($tagsSprint) ) {
 
       $sOutput .= PHP_EOL;
       $sOutput .= "- <comment>Tags:</comment>" . PHP_EOL;
@@ -134,12 +132,6 @@ class ConfigCommand extends Command {
         }
       }
 
-      if ( !empty($sBloquearPush) ) {
-
-        $sOutput .= PHP_EOL;
-        $sOutput .= "  <comment>Bloquear push:</comment>" . PHP_EOL;
-        $sOutput .= '  ' . $sBloquearPush . PHP_EOL;
-      }
     }
 
     $oOutput->writeln($sOutput);

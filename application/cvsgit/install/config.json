@@ -26,17 +26,8 @@
      * @var array | objetct
      */
     "sprint" : [
-    ],
+    ]
                                                              
-    /**
-     * Bloquar commit
-     * Ao usar o comando "cvsgit push" 
-     * caso tag usada pelo comando "cvsgit add -t " for
-     * diferente das tags do sprint, bloqueia push
-     *
-     * @var boolean
-     */ 
-    "bloquearPush" : false
   },
 
   /**

@@ -56,5 +56,5 @@ try {
 } catch(Exception $oErro) {
 
   $oOutput = new \Symfony\Component\Console\Output\ConsoleOutput();
-  $oOutput->writeln('<error>' . $oErro->getMessage() . '</error>');
+  $oOutput->writeln("<error>\n [You Tá The Brinqueichon Uite Me, cara?]\n " . $oErro->getMessage() . "\n</error>");
 }
