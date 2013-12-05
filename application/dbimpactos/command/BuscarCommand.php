@@ -28,12 +28,13 @@ class BuscarCommand extends Command {
 
     $this->addArgument('arquivos', InputArgument::IS_ARRAY, 'Arquivos para commit');
 
-    $this->addOption('trace',    't', InputOption::VALUE_NONE, 'Exibe arquivos usados até chegar ao menu');
-    // $this->addOption('requires', '', InputOption::VALUE_NONE, 'Exibe arquivos requiridos pelo arquivo');
-    // $this->addOption('used', '', InputOption::VALUE_NONE, 'Exibe arquivos que usam o arquivo');
-    // $this->addOption('log', '', InputOption::VALUE_NONE, 'Exibe log de erros ao buscar impactos do arquivo');
-    $this->addOption('file-list', '', InputOption::VALUE_REQUIRED, 'Arquivo com lista de arquivos a serems pesquisados');
-    $this->addOption('file-ignore', '', InputOption::VALUE_REQUIRED, 'Arquivo com lista de arquivos para ignorar');
+    $this->addOption('trace',       't', InputOption::VALUE_NONE,     'Exibe arquivos usados até chegar ao menu');
+    $this->addOption('project',     'p', InputOption::VALUE_REQUIRED, 'Diretório com arquivos do dbportal_prj');
+    $this->addOption('requires',    '',  InputOption::VALUE_NONE,     'Exibe arquivos requiridos pelo arquivo');
+    $this->addOption('used',        '',  InputOption::VALUE_NONE,     'Exibe arquivos que usam o arquivo');
+    $this->addOption('log',         '',  InputOption::VALUE_NONE,     'Exibe log de erros ao buscar impactos do arquivo');
+    $this->addOption('file-list',   '',  InputOption::VALUE_REQUIRED, 'Arquivo com lista de arquivos a serems pesquisados');
+    $this->addOption('file-ignore', '',  InputOption::VALUE_REQUIRED, 'Arquivo com lista de arquivos para ignorar');
   }
 
   /**
@@ -129,7 +130,11 @@ class BuscarCommand extends Command {
 
     try {	
 
-      $sDiretorioProjeto = '/var/www/dbportal_prj/';
+      $sDiretorioProjeto = $oInput->getOption('project');
+
+      if ( empty($sDiretorioProjeto) ) {
+        $sDiretorioProjeto = '/var/www/dbportal_prj/';
+      }
 
       foreach ( $oInput->getOptions() as $sArgumento => $sValorArgumento ) {
 
@@ -138,6 +143,18 @@ class BuscarCommand extends Command {
         }
 
         switch ( $sArgumento ) {
+          
+          case 'requires' :
+            $lRequires = true;
+          break;
+
+          case 'used' :
+            $lRequerido = true;
+          break;
+
+          case 'log' :
+            $lExibirLog = true;
+          break;
 
           case 'trace' :
             $lExibirOrigemMenu = true;
@@ -214,7 +231,9 @@ class BuscarCommand extends Command {
 
           $this->aMenusExibidos[] = $iMenu;
         }
+
         $oMenu = $oBanco->select("SELECT caminho FROM menu WHERE id = $iMenu");
+
         $oOutput->write("\n - $oMenu->caminho");
 
         if ( !$lExibirOrigemMenu ) {
@@ -259,7 +278,10 @@ class BuscarCommand extends Command {
           }
 
           $oOutput->write("\n\n");
+
         } else {
+
+          $aArquivoMenu = array_unique($aArquivoMenu);
 
           foreach ( $aArquivoMenu as $iArquivoMenu ) {
 
@@ -282,6 +304,7 @@ class BuscarCommand extends Command {
         if ( !$lExibirOrigemMenu ) {
           $oOutput->write("\n");
         }
+
         $oOutput->writeln("\n" . str_repeat("-", Shell::columns()));
         $oOutput->write("\n\n");
       }

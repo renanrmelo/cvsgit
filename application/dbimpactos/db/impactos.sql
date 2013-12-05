@@ -62,7 +62,8 @@ CREATE INDEX require_arquivo_require_in ON require(arquivo_require);
  */
 CREATE TABLE IF NOT EXISTS menu (
   id          INTEGER PRIMARY KEY AUTOINCREMENT, 
-  caminho     TEXT            DEFAULT NULL
+  caminho     TEXT            DEFAULT NULL,
+  programa    TEXT            DEFAULT NULL
 );
 
 /**

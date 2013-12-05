@@ -22,6 +22,8 @@ class AtualizarCommand extends Command {
     $this->setName('atualizar');
     $this->setDescription('Atualizar banco de dados do projeto');
     $this->setHelp('Atualizar banco de dados do projeto');
+
+    $this->addOption('project', 'p', InputOption::VALUE_REQUIRED, 'Diretório com arquivos do dbportal_prj');
     $this->addOption('clear', 'c', InputOption::VALUE_NONE, 'Limpa base');
   }
 
@@ -39,11 +41,14 @@ class AtualizarCommand extends Command {
 
     require_once PATH . 'lib/Arquivo.php';
     require_once PATH . 'lib/Banco.php';
-    require_once PATH . 'lib/dbConecta.php';
+    require_once PATH . 'lib/dbportal.php';
     require_once PATH . 'lib/Tokenizer.php';
-    require_once PATH . 'lib/db_autoload.php';
 
-    $sDiretorioProjeto = '/var/www/dbportal_prj/';
+    $sDiretorioProjeto = $oInput->getOption('project');
+
+    if ( empty($sDiretorioProjeto) ) {
+      $sDiretorioProjeto = '/var/www/dbportal_prj/';
+    }
 
     try {	
 
@@ -75,19 +80,31 @@ class AtualizarCommand extends Command {
         $oBanco->executeFile(PATH . 'db/impactos.sql');
       }
 
-      $this->status("\n - [1/4] Buscando arquivos do diretório: {$sDiretorioProjeto}");
-      $aArquivos = Arquivo::getArquivos($sDiretorioProjeto);
-      $iTotalArquivos = count($aArquivos);
-
       $oBanco->begin();	
 
       if ( $lClear ) {
         $oBanco->delete('arquivo');
       }
-      
-      dbconecta();
 
-      $this->status(" - [2/4] Verificando modificações de $iTotalArquivos arquivos.");
+      $this->status("\n - [1/6] Gerando lista com menus do dicionário de dados");
+
+      $oBanco->delete('menu');
+      $aMenus = getMenus();
+
+      foreach ( $aMenus as $oMenu ) {
+
+        $oBanco->insert('menu', array(
+          'id'       => $oMenu->id, 
+          'caminho'  => $oMenu->caminho,
+          'programa' => $oMenu->programa
+        ));
+      }
+
+      $this->status(" - [2/6] Buscando arquivos do diretório: {$sDiretorioProjeto}");
+      $aArquivos = Arquivo::getArquivos($sDiretorioProjeto);
+      $iTotalArquivos = count($aArquivos);
+      
+      $this->status(" - [3/6] Verificando modificações de $iTotalArquivos arquivos.");
 
       foreach ( $aArquivos as $iIndice => $sArquivo ) {
 
@@ -121,21 +138,18 @@ class AtualizarCommand extends Command {
         $aArquivoID[$oDadosArquivo->caminho] = $oDadosArquivo->id;
       }
 
-      asort($aArquivos);
+      sort($aArquivos);
       $iTotalArquivos = count($aArquivos);
 
       if ( $iTotalArquivos === 0 ) {
 
-        $oBanco->commit();
-        $oBanco->vacuum();
-
-        $this->status(" - Nenhum arquivo modificado");
-        $this->status(" - Processo concluido");
-        $this->status("");
+        $this->status(" - [4/6] Nenhum arquivo modificado");
+        $this->status(" - [5/6] Nenhum arquivo incluido");
+        $this->finalizar();
         return 0;
       }
       
-      $this->status(" - [3/4] Incluindo $iTotalArquivos arquivos no banco");
+      $this->status(" - [4/6] Incluindo $iTotalArquivos arquivos no banco");
 
       /**
        * Percorre todos os arquivos
@@ -153,32 +167,12 @@ class AtualizarCommand extends Command {
 
         $this->status("   arquivo[ $iIndice/$iTotalArquivos ] ", true);
 
-        $iTipo = Arquivo::buscarTipo($sArquivo);
-
-        if ($iTipo === Arquivo::TIPO_PROGRAMA ) {
-
-          $sCaminhoMenu = getCaminhoMenu(basename($sArquivo));
-
-          if ( !empty($sCaminhoMenu) ) {
-            $iTipo = Arquivo::TIPO_MENU;
-          }
-        }
-
         $oTokenizer = new Tokenizer($sArquivo);
-        
         $iTotalLinhas = $oTokenizer->getTotalLines();
 
         $oBanco->update('arquivo', array(
-          'caminho' => $sArquivo, 'modificado' => filemtime($sArquivo), 'tipo' => $iTipo, 'linhas' => $iTotalLinhas
+          'caminho' => $sArquivo, 'modificado' => filemtime($sArquivo), 'linhas' => $iTotalLinhas
         ), "id = {$iArquivo}");
-
-        if ($iTipo === Arquivo::TIPO_MENU ) {
-
-          $oBanco->delete('menu', "id = (select menu from menu_arquivo where arquivo = $iArquivo)");
-          $oBanco->delete('menu_arquivo', "arquivo = " . $iArquivo);
-          $iMenu         = $oBanco->insert('menu', array('caminho' => $sCaminhoMenu));
-          $iMenu_arquivo = $oBanco->insert('menu_arquivo', array('arquivo' => $iArquivo, "menu" => $iMenu));
-        }
 
         $oBanco->delete('metodo', "classe = (select id from classe where arquivo = $iArquivo)");
         $oBanco->delete('classe', "arquivo = $iArquivo");
@@ -186,7 +180,6 @@ class AtualizarCommand extends Command {
         foreach ( $oTokenizer->getClasses() as $sClasse => $aDadosClasse ) {
 
           $aMetodos = $aDadosClasse['method'];
-
           $iClasse  = $oBanco->insert('classe', array('arquivo' => $iArquivo, 'nome' => $sClasse));
 
           foreach ( $aMetodos as $aDadosMetodo ) {
@@ -214,7 +207,7 @@ class AtualizarCommand extends Command {
 
       }
 
-      $this->status(" - [4/4] Buscando dependencias de $iTotalArquivos arquivos");
+      $this->status(" - [5/6] Buscando dependencias de $iTotalArquivos arquivos");
 
       foreach ( $aArquivos as $iIndice => $sArquivo ) {
 
@@ -222,7 +215,7 @@ class AtualizarCommand extends Command {
 
         if ( empty($aArquivoID[$sArquivo]) ) { 
 
-          $this->oOutput->writeln("ID arquivo n�o encontrado: $sArquivo");
+          $this->oOutput->writeln("ID arquivo não encontrado: $sArquivo");
           continue;
         }
 
@@ -239,7 +232,7 @@ class AtualizarCommand extends Command {
           if ( empty($aArquivoID[$sArquivoRequire]) ) { 
 
             $sMensagemLog .= "\n ----------------------------------------------------------------------------------------------------\n";
-            $sMensagemLog .= " - ID arquivo de require n�o encontrado: '" . $sArquivoRequire . "'";
+            $sMensagemLog .= " - ID arquivo de require não encontrado: '" . $sArquivoRequire . "'";
             $sMensagemLog .= "\n  Usado em: $sArquivo: " . $iLinhaRequire;
             $sMensagemLog .= "\n ----------------------------------------------------------------------------------------------------\n";
             continue;
@@ -266,7 +259,7 @@ class AtualizarCommand extends Command {
           if ( empty($aArquivoClasse) ) {
 
             $sMensagemLog .= "\n ----------------------------------------------------------------------------------------------------\n";
-            $sMensagemLog .= " - $sArquivo:\n   Classe n�o encontrada: $sClasse";
+            $sMensagemLog .= " - $sArquivo:\n   Classe não encontrada: $sClasse";
             $sMensagemLog .= "\n ----------------------------------------------------------------------------------------------------\n";
             continue;
           }
@@ -316,12 +309,8 @@ class AtualizarCommand extends Command {
           $oBanco->insert('log', array('arquivo' => $iArquivo, 'log' => $sMensagemLog));
         }
       }	
-      
-      $oBanco->commit();
-      $oBanco->vacuum();
 
-      $this->status(" - Processo concluido");
-      $this->status("");
+      $this->finalizar();
         
     } catch (Exception $oErro) {
       
@@ -332,6 +321,48 @@ class AtualizarCommand extends Command {
       $this->oOutput->writeln("\n" . print_r($oErro, true));
     }
 
+  }
+
+  public function atualizarMenus() {
+
+    $this->status(" - [6/6] Atualizando menus");
+
+    $oBanco = Banco::getInstancia();
+    $oBanco->delete('menu_arquivo');
+    $aArquivosSalvos = $oBanco->selectAll('
+      select * from arquivo where tipo in (' . Arquivo::TIPO_PROGRAMA . ', ' . Arquivo::TIPO_MENU . ')
+    ');
+
+    foreach ( $aArquivosSalvos as $iIndice => $oArquivo ) {
+
+      $iArquivo = $oArquivo->id;
+      $sArquivo = basename($oArquivo->caminho);
+
+      $aMenusArquivo = $oBanco->selectAll("select id from menu where programa like '$sArquivo%'");
+
+      if ( !empty($aMenusArquivo) ) {
+
+        $oBanco->update('arquivo', array('tipo' => Arquivo::TIPO_MENU), "id = {$iArquivo}");
+
+        foreach ( $aMenusArquivo as $oMenuArquivo ) {
+          $oBanco->insert('menu_arquivo', array('arquivo' => $iArquivo, "menu" => $oMenuArquivo->id));
+        }
+      }
+
+    }
+      
+  }
+
+  public function finalizar() {
+
+    $this->atualizarMenus();
+
+    $oBanco = Banco::getInstancia();
+    $oBanco->commit();
+    $oBanco->vacuum();
+
+    $this->status(" - Processo concluido");
+    $this->status("");
   }
 
   public function status($sMensagem, $lClear = false) {

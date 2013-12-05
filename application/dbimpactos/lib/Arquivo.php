@@ -133,14 +133,18 @@ class Arquivo {
 
     foreach ( $aDadosRequires as $oDadosRequire ) {
 
-      $iMenu = $this->buscarMenu($oDadosRequire->arquivo);
+      $aMenus = $this->buscarMenu($oDadosRequire->arquivo);
 
-      if ( !empty($iMenu) ) {
+      if ( !empty($aMenus) ) {
 
-        $aOrigemMenu[$iArquivo][$oDadosRequire->arquivo] = $iMenu;
-        $this->aMenus[$iMenu][] = $oDadosRequire->arquivo;
+        foreach ( $aMenus as $iMenu ) {
+
+          $aOrigemMenu[$iArquivo][$oDadosRequire->arquivo] = $iMenu;
+          $this->aMenus[$iMenu][] = $oDadosRequire->arquivo;
+        }
+
         continue;
-      }   
+      }
 
       $aOrigemMenu[$iArquivo][$oDadosRequire->arquivo] = array();
       $this->buscarMenuRecursivo($oDadosRequire->arquivo, $aOrigemMenu[$iArquivo]);  
@@ -175,24 +179,15 @@ class Arquivo {
 
   public function buscarMenu($iArquivo) {
 
+    $aMenus = array();
     $oBanco = Banco::getInstancia();
     $aDadosMenu = $oBanco->selectAll("SELECT menu FROM menu_arquivo WHERE menu_arquivo.arquivo = $iArquivo");
 
-    /**
-     * Nao é menu 
-     */
-    if ( count($aDadosMenu) == 0 ) {
-      return false;
+    foreach ( $aDadosMenu as $oDadosMenu ) {
+      $aMenus[] = $oDadosMenu->menu; 
     }
 
-    /**
-     * @todo - Retornar um array 
-     */
-    if ( count($aDadosMenu) > 1 ) {
-      throw new Exception("Arquivo com mais de um menu, comportamento não implementado.\n" . print_r($aDadosMenu, true));
-    }
-
-    return $aDadosMenu[0]->menu;
+    return $aMenus;
   }
 
   public static function clearPath($sCaminhoArquivo, $sDiretorioProjeto = '/var/www/dbportal_prj/') {
