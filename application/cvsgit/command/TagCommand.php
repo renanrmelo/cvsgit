@@ -26,7 +26,6 @@ class TagCommand extends Command {
 
     $this->addOption('added',  'a', InputOption::VALUE_NONE, 'Adicionar tag');
     $this->addOption('delete', 'd', InputOption::VALUE_NONE, 'Deletar tag');
-    $this->addOption('move',   'm', InputOption::VALUE_NONE, 'Mover tag');
   }
 
   /**

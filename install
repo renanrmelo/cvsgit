@@ -69,6 +69,7 @@ function createBootstrap($sAplicacao) {
 
   $sBootstrap  = '#!/usr/bin/env php ' . PHP_EOL;                         
   $sBootstrap .= '<?php' . PHP_EOL;                         
+  $sBootstrap .= 'require_once dirname(__DIR__) . "/system/bootstrap.php";    ' . PHP_EOL;
   $sBootstrap .= 'require_once dirname(__DIR__) . "/application/' . $sAplicacao . '/bootstrap.php";    ' . PHP_EOL;
 
   $sArquivoBootstrap = __DIR__ . '/bin/'. $sAplicacao;

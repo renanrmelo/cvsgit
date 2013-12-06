@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../../system/bootstrap.php';
 require_once APPLICATION_DIR . 'cvsgit/CVSApplication.php';
 require_once APPLICATION_DIR . 'cvsgit/command/AddCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/TagCommand.php';

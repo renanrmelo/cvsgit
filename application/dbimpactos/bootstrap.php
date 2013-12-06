@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../../system/bootstrap.php';
 require_once APPLICATION_DIR . 'dbimpactos/DBImpactosApplication.php';
 require_once APPLICATION_DIR . 'dbimpactos/command/BuscarCommand.php';
 require_once APPLICATION_DIR . 'dbimpactos/command/AtualizarCommand.php';

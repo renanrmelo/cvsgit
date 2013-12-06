@@ -232,8 +232,8 @@ class StatusCommand extends Command {
     $aArquivos = $oArquivoModel->getAdicionados(); 
 
     foreach ($aArquivos as $oCommit) {
-      $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->getArquivo());
-    }
+        $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->getArquivo());
+      }
 
     /**
      * Pesquisa modificacoes no cvs apenas se:
@@ -588,22 +588,22 @@ class StatusCommand extends Command {
 
         foreach ($aArquivos as $oCommit) {
 
-          $sTipo = $oCommit->getTipo();
+            $sTipo = $oCommit->getTipo();
 
-          switch ( $oCommit->getComando() ) {
+            switch ( $oCommit->getComando() ) {
 
-            case Arquivo::COMANDO_ADICIONAR_TAG :
-              $sTipo = 'Adicionar tag';
-            break;
+              case Arquivo::COMANDO_ADICIONAR_TAG :
+                $sTipo = 'Adicionar tag';
+              break;
 
-            case Arquivo::COMANDO_REMOVER_TAG :
-              $sTipo = 'Remover tag';
-            break;
-          }
+              case Arquivo::COMANDO_REMOVER_TAG :
+                $sTipo = 'Remover tag';
+              break;
+            }
 
-          $oTabelaCommit->addRow(array(
-            $this->getApplication()->clearPath($oCommit->getArquivo()), $oCommit->getTagMensagem(), $oCommit->getTagArquivo(), $oCommit->getMensagem(), $sTipo
-          ));
+            $oTabelaCommit->addRow(array(
+              $this->getApplication()->clearPath($oCommit->getArquivo()), $oCommit->getTagMensagem(), $oCommit->getTagArquivo(), $oCommit->getMensagem(), $sTipo
+            ));
         }
 
         if ( !empty($aArquivos) ) {

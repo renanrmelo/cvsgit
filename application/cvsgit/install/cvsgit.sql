@@ -32,11 +32,11 @@ CREATE INDEX pull_files_pull_in ON pull_files(pull_id);
  * type : ENH, FIX, ADD, STYLE
  * 
  * command:
- * - 0 : commit e tag
- * - 1 : adicionar tag
- * - 2 : mover tag
- * - 3 : deletar tag
- * - 4 : deletar arquivo e tag
+ * commitar e taggear    = 0
+ * adicionar tag         = 1
+ * remover tag           = 2
+ * remover arquivo e tag = 3
+ * commitar              = 4
  */
 CREATE TABLE IF NOT EXISTS add_files (
   id           INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -47,14 +47,10 @@ CREATE TABLE IF NOT EXISTS add_files (
   message      TEXT            DEFAULT NULL,
   type         TEXT            DEFAULT NULL,
   command      INTEGER         DEFAULT 0
+  CONSTRAINT fk_add_files_project FOREIGN KEY(project_id) REFERENCES project(id)
 );
 
-CREATE TABLE IF NOT EXISTS tag_files (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT, 
-  project_id   INTEGER         NOT NULL, 
-  file         TEXT            NOT NULL, 
-  tag          TEXT            DEFAULT NULL
-);
+CREATE INDEX add_files_project_in ON add_files(project_id);
 
 CREATE TABLE IF NOT EXISTS history (
   id          INTEGER PRIMARY KEY AUTOINCREMENT, 

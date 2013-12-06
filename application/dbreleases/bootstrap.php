@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/../../system/bootstrap.php';
 require_once APPLICATION_DIR . 'dbreleases/DBReleasesCommand.php';
 
 define('PATH', __DIR__ . '/');

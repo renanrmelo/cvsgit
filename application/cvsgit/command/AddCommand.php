@@ -79,6 +79,12 @@ class AddCommand extends Command {
         $lAdicionado = false;
         $oArquivo = $this->aArquivos[$sArquivo];
 
+        if ( in_array($oArquivo->getComando(), array(Arquivo::COMANDO_ADICIONAR_TAG, Arquivo::COMANDO_REMOVER_TAG)) ) {
+
+          $oArquivo = new Arquivo();
+          $oArquivo->setArquivo($sArquivo);
+        }
+
       } else {
 
         $oArquivo = new Arquivo();

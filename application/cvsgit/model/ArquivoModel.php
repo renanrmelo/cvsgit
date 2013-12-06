@@ -95,9 +95,9 @@ class ArquivoModel extends CvsGitModel {
       break;
     }
 
-    /**
+      /**
      * Salva no banco os arquivos com suas configurações de commit 
-     */
+       */
     foreach ($aArquivos as $oArquivo) {
 
       if ( !empty($aArquivosAdicionados[$oArquivo->getArquivo()]) ) {
