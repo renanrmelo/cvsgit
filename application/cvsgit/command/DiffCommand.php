@@ -78,12 +78,20 @@ class DiffCommand extends Command {
       $nPrimeiraVersao = $iVersaoAtual;
     }
 
-    $sProjeto             = $this->getApplication()->getModel()->getProjeto()->name;
+    if ( !file_exists('CVS/Repository') ) {
+      throw new Exception('Diretório atual não é um repositorio CVS.');
+    }
+
+    $sDiretorioRepositorio = trim(file_get_contents('CVS/Repository'));
+    $aDiretorioRepositorio = explode('/', $sDiretorioRepositorio);
+    $sProjeto = $aDiretorioRepositorio[0];
+
+    $sDiretorioCheckout   = $sDiretorioRepositorio;
     $sDiretorioTemporario = '/tmp/cvs-diff/';
     $sSeparador           = '__';
-    $sComandoCheckout     = "cvs checkout -r %s $sProjeto/" . escapeshellarg($sArquivo) . " 2> /tmp/cvsgit_last_error";
-    $sComandoMover        = "mv {$sProjeto}/" . escapeshellarg($sArquivo) . " {$sDiretorioTemporario}[%s]\ " . basename($sArquivo);
-    $sComandoMoverProjeto = "cp -rf $sProjeto/ $sDiretorioTemporario && rm -rf $sProjeto/";
+    $sComandoCheckout     = "cvs checkout -r %s " . escapeshellarg("$sDiretorioCheckout/" . $sArquivo) . " 2> /tmp/cvsgit_last_error";
+    $sComandoMover        = "mv " . escapeshellarg("$sDiretorioCheckout/" . $sArquivo) . " {$sDiretorioTemporario}[%s]\ " . basename($sArquivo);
+    $sComandoMoverProjeto = "cp -rf " . escapeshellarg($sProjeto) . " $sDiretorioTemporario && rm -rf " . escapeshellarg($sProjeto);
 
     /**
      * Cria diretorio temporario
