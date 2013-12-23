@@ -2,25 +2,25 @@
 
 class Tokenizer {
 
-  private $classes = array();
-  private $functions = array();
-  private $requires = array();
-  private $declaring = array();
+  protected $classes = array();
+  protected $functions = array();
+  protected $requires = array();
+  protected $declaring = array();
 
-  private $pathRequire;
-  private $pathFile;
-  private $log = "";
+  protected $pathRequire;
+  protected $pathFile;
+  protected $log = "";
 
   /**
    * lines
    */
-  private $totalLines = 0;
-  private $current = 0;
+  protected $totalLines = 0;
+  protected $current = 0;
 
-  private $tokens = array();
-  private $currentClassName;
-  private $brackets;
-  private $typeRequire = array(T_REQUIRE, T_REQUIRE_ONCE, T_INCLUDE, T_INCLUDE_ONCE);
+  protected $tokens = array();
+  protected $currentClassName;
+  protected $brackets;
+  protected $typeRequire = array(T_REQUIRE, T_REQUIRE_ONCE, T_INCLUDE, T_INCLUDE_ONCE);
 
   const FILE_PATTERN = '/\b(?P<files>[\/\w-.]+\.php)\b/mi';
 
@@ -49,7 +49,7 @@ class Tokenizer {
       return;
     }
 
-    $this->tokens = @token_get_all($source);
+    $this->tokens = @token_get_all($source);    
     $source = null;
 
     $this->parse();
@@ -121,8 +121,16 @@ class Tokenizer {
         continue;
       }
 
-      if ( $type === T_CONSTANT_ENCAPSED_STRING ) {
+      if ( $type === T_CONSTANT_ENCAPSED_STRING || $type === T_ENCAPSED_AND_WHITESPACE ) {
+
         $this->parseString();
+        continue;
+      }
+
+      if ( $type === T_DOUBLE_COLON) {
+        
+        $this->parseStatic();
+        continue;
       }
 
     }
@@ -139,27 +147,72 @@ class Tokenizer {
     return $matches['files'];
   }
 
-  public function parseNext($type) {
+  public function parseNext($type) {    
 
-    $next = 1;
+    $next = $this->current + 1;
 
-    while ( !empty($this->tokens[$this->current + $next][0]) ) {
+    while ( !empty($this->tokens[$next] ) ) {
 
-      if ( $this->tokens[$this->current + $next][0] === $type ) {
+      if ( is_scalar($this->tokens[$next]) ) {
 
-        $tokens = array( $this->tokens[$this->current + $next][2], $this->tokens[$this->current + $next][1] );
-        $this->current = $this->current + $next;
+        if ( $this->tokens[$next] === $type ) {
+          return $type;
+        }
+
+        $next++;                
+        continue;
+      }
+
+      if ( $this->tokens[$next][0] === $type ) {
+
+        $tokens = array( $this->tokens[$next][2], $this->tokens[$next][1] );
+        $this->current = $next;
         return $tokens;
       }
 
-      if ( $this->tokens[$this->current + $next][0] === ';' ) {
+      if ( $this->tokens[$next][0] === ';' ) {
         return false;
       }
 
       $next++;
     }
 
-    return false;
+    return false; 
+  }
+
+  public function parsePrev($type) {    
+    
+    $prev =  $this->current - 1;   
+
+    while ( !empty($this->tokens[$prev] ) ) {
+      
+      if ( is_scalar($this->tokens[$prev]) ) {
+
+        if ( $this->tokens[$prev] === $type ) {
+
+          $this->current = $prev;
+          return $type;
+        }
+
+        $prev--;                
+        continue;
+      }
+
+      if ( $this->tokens[$prev][0] === $type ) {
+
+        $tokens = array( $this->tokens[$prev][2], $this->tokens[$prev][1] );
+        $this->current = $prev;
+        return $tokens;
+      }
+
+      if ( $this->tokens[$prev][0] === ';' ) {
+        return false;
+      }
+
+      $prev--;
+    }
+
+    return false; 
   }
 
   public function parseClass() {
@@ -314,6 +367,25 @@ class Tokenizer {
     } 
   }
 
+  public function parseStatic() {
+
+    $current = $this->current;
+    $staticClasses  = $this->parsePrev(T_STRING);
+    //$metodo = $this->parseNext(T_STRING);    
+    
+    $this->current = $current;
+    if ( empty($staticClasses)) {
+      return false;
+    }
+
+    $sNomeArquivo = $staticClasses[1];
+    $iLinha = $staticClasses[0];
+
+    $this->declaring[] = array('line' => $iLinha, 'class' => $sNomeArquivo);
+
+    return true;
+  }
+
   public function getClasses() {
     return $this->classes;
   }
@@ -342,33 +414,22 @@ class Tokenizer {
     $this->clearMemory();
   }
 
-  public function clearMemory() {
-
-    $this->classes          = null;
-    $this->functions        = null;
-    $this->requires         = null;
-    $this->declaring        = null;
-    $this->tokens           = null;
-    $this->log              = null;
-    $this->typeRequire      = null;
-    $this->pathRequire      = null;
-    $this->pathFile         = null;
-    $this->log              = null;
-    $this->totalLines       = null;
-    $this->currentClassName = null;
-    $this->brackets         = null;
-  }
-
 }
 
 
 // @todo - nao achou o arquivo pro3_consultaprocesso002.php 
+// pro3_imprimirconsultaprocesso.php
 // $Tokenizer = new Tokenizer('/var/www/dbportal_prj/pro3_consultaprocesso002.php');
+
+//echo token_name(314);
+
+//$Tokenizer = new Tokenizer('/var/www/dbportal_prj/pro3_consultaprocesso002.php');
 
 // $Tokenizer = new Tokenizer('/var/www/dbportal_prj/edu4_encerramentoavaliacao.RPC.php');
 // $Tokenizer = new Tokenizer('/var/www/dbportal_prj/model/educacao/progressaoparcial/ProgressaoParcialAluno.model.php');
 
+
 // print_r($Tokenizer->getClasses());
 // print_r($Tokenizer->getFunctions());
-// print_r($Tokenizer->getRequires());
+//print_r($Tokenizer->getRequires());
 // print_r($Tokenizer->getDeclaring());

@@ -5,7 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Exception, Banco, Tokenizer, Arquivo;
+use Exception, Banco, DBTokenizer, Arquivo;
 
 class AtualizarCommand extends Command {
 
@@ -42,7 +42,7 @@ class AtualizarCommand extends Command {
     require_once PATH . 'lib/Arquivo.php';
     require_once PATH . 'lib/Banco.php';
     require_once PATH . 'lib/dbportal.php';
-    require_once PATH . 'lib/Tokenizer.php';
+    require_once PATH . 'lib/DBTokenizer.php';
 
     $sDiretorioProjeto = $oInput->getOption('project');
 
@@ -52,8 +52,7 @@ class AtualizarCommand extends Command {
 
     try {	
 
-      $sArquivoBanco =  PATH . 'db/impactos.db';
-      $lCriarTabelas = false;
+      $sArquivoBanco =  PATH . 'db/impactos.db'; 
       $lClear = false;
 
       foreach ( $oInput->getOptions() as $sArgumento => $sValorArgumento ) {
@@ -70,21 +69,20 @@ class AtualizarCommand extends Command {
         }
       }
 
-      if ( !file_exists($sArquivoBanco) ) {
-        $lCriarTabelas = true;
-      }
+      if ( $lClear ) {
 
+        if ( file_exists($sArquivoBanco) && !unlink($sArquivoBanco)) {
+          throw new Exception("Não foi possivel remover arquivo: $sArquivoBanco");
+        }
+      }
+     
       $oBanco = new Banco($sArquivoBanco);
 
-      if ( $lCriarTabelas ) {
+      if ($lClear) {        
         $oBanco->executeFile(PATH . 'db/impactos.sql');
       }
 
-      $oBanco->begin();	
-
-      if ( $lClear ) {
-        $oBanco->delete('arquivo');
-      }
+      $oBanco->begin();	 
 
       $this->status("\n - [1/6] Gerando lista com menus do dicionário de dados");
 
@@ -167,7 +165,7 @@ class AtualizarCommand extends Command {
 
         $this->status("   arquivo[ $iIndice/$iTotalArquivos ] ", true);
 
-        $oTokenizer = new Tokenizer($sArquivo);
+        $oTokenizer = new DBTokenizer($sArquivo);
         $iTotalLinhas = $oTokenizer->getTotalLines();
 
         $oBanco->update('arquivo', array(
@@ -199,7 +197,6 @@ class AtualizarCommand extends Command {
         }
 
         $sMensagemLog = $oTokenizer->getLog();
-        $oTokenizer->clearMemory();
         
         if ( !empty($sMensagemLog) ) {
           $oBanco->insert('log', array('arquivo' => $iArquivo, 'log' => $sMensagemLog));
@@ -220,7 +217,7 @@ class AtualizarCommand extends Command {
         }
 
         $iArquivo         = $aArquivoID[$sArquivo];
-        $oTokenizer       = new Tokenizer($sArquivo);
+        $oTokenizer       = new DBTokenizer($sArquivo);
         $aArquivosRequire = $oTokenizer->getRequires();
         $sMensagemLog     = "";
 
@@ -318,7 +315,7 @@ class AtualizarCommand extends Command {
         $oBanco->rollback();
       }
 
-      $this->oOutput->writeln("\n" . print_r($oErro, true));
+      throw new Exception($oErro->getMessage());      
     }
 
   }
