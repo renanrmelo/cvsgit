@@ -6,6 +6,7 @@ class Tokenizer {
   protected $functions = array();
   protected $requires = array();
   protected $declaring = array();
+  protected $constants = array();
 
   protected $pathRequire;
   protected $pathFile;
@@ -30,8 +31,6 @@ class Tokenizer {
       throw new Exception('File not exists: ' . $pathFile);
     }
 
-    // $source = file_get_contents($pathFile);
-
     $this->pathFile = $pathFile;
     $this->pathRequire = dirname($pathFile) . '/';
     $this->pathProject = $pathProject;
@@ -50,6 +49,7 @@ class Tokenizer {
     }
 
     $this->tokens = @token_get_all($source);    
+
     $source = null;
 
     $this->parse();
@@ -119,6 +119,16 @@ class Tokenizer {
 
         $this->parseClass();
         continue;
+      }
+
+      if ( $type === T_CONST) {
+
+        $this->parseConstant();
+        continue;
+      }
+
+      if ( $type === T_STRING && strtolower($value) === 'define' ) {
+        $this->parseConstantDefined();
       }
 
       if ( $type === T_CONSTANT_ENCAPSED_STRING || $type === T_ENCAPSED_AND_WHITESPACE ) {
@@ -227,7 +237,7 @@ class Tokenizer {
     $class = $dataClass[1];
 
     $this->currentClassName = $class;
-    $this->classes[$this->currentClassName] = array('line' => $line, 'method' => array());
+    $this->classes[$this->currentClassName] = array('line' => $line, 'method' => array(), 'constant' => array());
   }
 
   public function parseFunction() {
@@ -291,7 +301,7 @@ class Tokenizer {
       return false;
     }
 
-    $require = str_replace(array('"', "'"), '', $dataRequire[1]);
+    $require = $this->clearEncapsedString($dataRequire[1]);
 
     $requireFile = $this->pathRequire . $require; 
 
@@ -367,21 +377,60 @@ class Tokenizer {
     } 
   }
 
+  public function parseConstant() {
+    
+    $dataConstant = $this->parseNext(T_STRING);
+
+    if ( empty($dataConstant) ) {
+      return false;
+    }
+
+    if ( empty($this->currentClassName) ) {
+
+      $this->constants[] = array('line' => $dataConstant[0], 'name' => $dataConstant[1]);
+      return true;
+    }
+
+    $this->classes[$this->currentClassName]['constant'][] = array('line' => $dataConstant[0], 'name' => $dataConstant[1]);
+    return true; 
+  }
+
+  public function parseConstantDefined() {
+
+    $dataConstant = $this->parseNext(T_CONSTANT_ENCAPSED_STRING);
+
+    if ( empty($dataConstant) ) {
+      return false;
+    }
+
+    $this->constants[] = array('line' => $dataConstant[0], 'name' => $this->clearEncapsedString($dataConstant[1]));
+    return true; 
+  }
+
+  public function clearEncapsedString($string) {
+    return str_replace(array('"', "'"), '', $string);
+  }
+
   public function parseStatic() {
 
     $current = $this->current;
     $staticClasses  = $this->parsePrev(T_STRING);
-    //$metodo = $this->parseNext(T_STRING);    
+    //$value = $this->parseNext(T_STRING); //@todo - verificar se é metodo ou constant    
     
     $this->current = $current;
+
     if ( empty($staticClasses)) {
       return false;
     }
 
-    $sNomeArquivo = $staticClasses[1];
-    $iLinha = $staticClasses[0];
+    $class = $staticClasses[1];
+    $line  = $staticClasses[0];
 
-    $this->declaring[] = array('line' => $iLinha, 'class' => $sNomeArquivo);
+    if ( $class === $this->currentClassName || strtolower($class) === 'self' ) {
+      return false;
+    }
+
+    $this->declaring[] = array('line' => $line, 'class' => $class);
 
     return true;
   }
@@ -402,6 +451,10 @@ class Tokenizer {
     return $this->declaring;
   }
 
+  public function getConstants() {
+    return $this->constants;
+  }
+
   public function getLog() {
     return $this->log;
   }
@@ -410,26 +463,17 @@ class Tokenizer {
     return $this->totalLines;
   }
 
-  public function __destruct() {
-    $this->clearMemory();
+  public function getDebugTokens() {
+
+    return array_map(function($tokens) {
+
+      if ( is_array($tokens) && !empty($tokens[0]) ) {
+        $tokens[0] = token_name($tokens[0]);
+      }
+
+      return $tokens;
+
+    }, $this->tokens); 
   }
 
 }
-
-
-// @todo - nao achou o arquivo pro3_consultaprocesso002.php 
-// pro3_imprimirconsultaprocesso.php
-// $Tokenizer = new Tokenizer('/var/www/dbportal_prj/pro3_consultaprocesso002.php');
-
-//echo token_name(314);
-
-//$Tokenizer = new Tokenizer('/var/www/dbportal_prj/pro3_consultaprocesso002.php');
-
-// $Tokenizer = new Tokenizer('/var/www/dbportal_prj/edu4_encerramentoavaliacao.RPC.php');
-// $Tokenizer = new Tokenizer('/var/www/dbportal_prj/model/educacao/progressaoparcial/ProgressaoParcialAluno.model.php');
-
-
-// print_r($Tokenizer->getClasses());
-// print_r($Tokenizer->getFunctions());
-//print_r($Tokenizer->getRequires());
-// print_r($Tokenizer->getDeclaring());

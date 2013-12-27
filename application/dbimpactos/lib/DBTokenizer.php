@@ -3,6 +3,9 @@ require_once __DIR__ . '/Tokenizer.php';
 
 class DBTokenizer extends Tokenizer {
   
+  private $aFuncoesUtilizadas = array();
+  private $aConstantesUtilizadas = array();
+
   public function __construct($pathFile, $pathProject = '/var/www/dbportal_prj/') {
 
     parent::__construct($pathFile, $pathProject);
@@ -13,8 +16,6 @@ class DBTokenizer extends Tokenizer {
 
     $count = count($this->tokens);
     $this->brackets  = 0;    
-
-    //print_r($this->tokens);
 
     for ($this->current = 0; $this->current < $count; $this->current++) {
 
@@ -27,8 +28,19 @@ class DBTokenizer extends Tokenizer {
       $type  = $this->tokens[$this->current][0];
       $value = $this->tokens[$this->current][1];
 
-      if ( $value == 'db_utils' ) {
-        $this->processarGetDao();
+      if ($type === T_STRING) {
+        if (  $value == 'db_utils' ) {
+          $this->processarGetDao();
+          continue;
+        }
+
+        /**
+         * Token é string
+         * - Caso não encontre funcao procura constant
+         */
+        if ( !$this->processarFuncao() ) {
+          $this->processarConstante();
+        }
       }
 
     }
@@ -56,21 +68,49 @@ class DBTokenizer extends Tokenizer {
     return true;
   }
 
+  public function processarFuncao() {
+
+    $funcao = $this->tokens[$this->current][1];
+    $linha   = $this->tokens[$this->current][2];
+
+    $aDadosFuncao = $this->parseNext('(');
+
+    if ( empty($aDadosFuncao)) {
+      return false;
+    }
+
+    $this->aFuncoesUtilizadas[] = $funcao;
+    return true;
+  }
+
+  public function processarConstante() {
+
+    $constante = $this->tokens[$this->current][1];
+    $linha   = $this->tokens[$this->current][2];   
+
+    $this->aConstantesUtilizadas[] = $constante;
+    return true;
+  }
+
+  public function getFuncoesUtilizadas() {
+    return $this->aFuncoesUtilizadas;
+  }
+
+  public function getConstantesUtilizadas() {
+    return $this->aConstantesUtilizadas;
+  }
+
 }
 
 
-//$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/teste.php');
+//$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/model/dataManager.php');
+//$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/pes2_emissao_pdf002.php');
 //$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/scripts/classes/DBViewEncerramentoAvaliacoesFiltro.classe.js');
 
-//echo "\n ::: " . token_name(376);
-//echo "\n getInstance: " . token_name(307);
-//echo "\n assinatura: " . token_name(309);
-//echo "\n assinatura: " . token_name(305);
-//echo "\n\n";
-
-
-print_r($Tokenizer->getClasses());
-print_r($Tokenizer->getFunctions());
-print_r($Tokenizer->getRequires());
-print_r($Tokenizer->getDeclaring());
-print_r($Tokenizer->getLog());
+//print_r($Tokenizer->getDebugTokens());
+//print_r($Tokenizer->getConstants());
+//print_r($Tokenizer->getClasses());
+// print_r($Tokenizer->getFunctions());
+// print_r($Tokenizer->getRequires());
+// print_r($Tokenizer->getDeclaring());
+// print_r($Tokenizer->getLog());

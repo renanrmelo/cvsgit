@@ -178,25 +178,48 @@ class AtualizarCommand extends Command {
         foreach ( $oTokenizer->getClasses() as $sClasse => $aDadosClasse ) {
 
           $aMetodos = $aDadosClasse['method'];
+          $aConstants = $aDadosClasse['constant'];
           $iClasse  = $oBanco->insert('classe', array('arquivo' => $iArquivo, 'nome' => $sClasse));
 
+          /**
+           * Inclui os metods da classe 
+           */
           foreach ( $aMetodos as $aDadosMetodo ) {
-
-            $sMetodo = $aDadosMetodo['function'];
-            $oBanco->insert('metodo', array('classe' => $iClasse, 'nome' => $sMetodo));
+            $oBanco->insert('metodo', array('classe' => $iClasse, 'nome' => $aDadosMetodo['function']));
           }
+
+          /**
+           * Inclui as constants da classe 
+           */
+          foreach ( $aConstants as $aDadosContant ) {
+            $oBanco->insert('classe_constant', array('classe' => $iClasse, 'nome' => $aDadosContant['name']));
+          }
+
         }
 
+        /**
+         * Salva funções do arquivo 
+         */
         $oBanco->delete('funcao', "arquivo = $iArquivo");
-        $oBanco->delete('log', "arquivo = $iArquivo");
 
         foreach ( $oTokenizer->getFunctions() as $aDadosFuncao ) {
-
-          $sFuncao = $aDadosFuncao['function'];
-          $oBanco->insert('funcao', array('arquivo' => $iArquivo, 'nome' => $sFuncao));
+          $oBanco->insert('funcao', array('arquivo' => $iArquivo, 'nome' => $aDadosFuncao['function']));
         }
 
+        /**
+         * Salva constants do arquivo 
+         */
+        $oBanco->delete('constant', "arquivo = $iArquivo");
+
+        foreach ( $oTokenizer->getConstants() as $aDadosConstant ) {
+          $oBanco->insert('constant', array('arquivo' => $iArquivo, 'nome' => $aDadosConstant['name']));
+        }
+
+        /**
+         * Salva log de erros 
+         */
         $sMensagemLog = $oTokenizer->getLog();
+        $oBanco->delete('log', "arquivo = $iArquivo");
         
         if ( !empty($sMensagemLog) ) {
           $oBanco->insert('log', array('arquivo' => $iArquivo, 'log' => $sMensagemLog));
@@ -237,9 +260,12 @@ class AtualizarCommand extends Command {
 
           $iArquivoRequire = $aArquivoID[$sArquivoRequire]; 
 
+          $lUtiliza = $this->verificaUtilizacaoArquivo($oTokenizer, $iArquivoRequire);
+
           $oBanco->insert('require', array(
-            'arquivo' => $iArquivo, 'arquivo_require' => $iArquivoRequire, 'linha' => $iLinhaRequire, 
+            'arquivo' => $iArquivo, 'arquivo_require' => $iArquivoRequire, 'linha' => $iLinhaRequire, 'utiliza' => $lUtiliza 
           ));
+
         }
 
         foreach ( $oTokenizer->getDeclaring() as $aDadosDeclaracao ) {
@@ -298,7 +324,7 @@ class AtualizarCommand extends Command {
           $iArquivoDeclaracao = $aArquivoID[$sArquivoClasse]; 
 
           $oBanco->insert('require', array(
-            'arquivo' => $iArquivo, 'arquivo_require' => $iArquivoDeclaracao, 'linha' => $iLinhaDeclaracao, 
+            'arquivo' => $iArquivo, 'arquivo_require' => $iArquivoDeclaracao, 'linha' => $iLinhaDeclaracao, 'utiliza' => true
           ));
         }
 
@@ -348,6 +374,46 @@ class AtualizarCommand extends Command {
 
     }
       
+  }
+
+  public function verificaUtilizacaoArquivo($oTokenizer, $iArquivoRequirido) {
+
+    $aFuncoes    = Arquivo::getFuncoes($iArquivoRequirido);
+    $aConstantes = Arquivo::getConstantes($iArquivoRequirido);
+    $aClasses    = Arquivo::getClasses($iArquivoRequirido);
+
+    $aDeclarados = $oTokenizer->getDeclaring();
+
+    $aFuncoesUtilizadas = $oTokenizer->getFuncoesUtilizadas();
+    $aConstantesUtilizadas = $oTokenizer->getConstantesUtilizadas();
+
+    foreach ( $aFuncoes as $oFuncao ) {
+
+      if ( in_array($oFuncao->nome, $aFuncoesUtilizadas) ) {
+        return true;
+      }
+    }
+
+    foreach ( $aConstantes as $oConstante ) {
+
+      if ( in_array($oConstante->nome, $aConstantesUtilizadas) ) {
+        return true;
+      }
+    }
+
+    foreach ($aClasses as $sClasse => $aDadosClasse ) {
+
+      foreach ( $aDeclarados as $aDadosDeclaracao ) {
+
+        $sClasseDeclarada = $aDadosDeclaracao['class'];
+
+        if ( strtolower($sClasse) === strtolower($sClasseDeclarada) ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   public function finalizar() {

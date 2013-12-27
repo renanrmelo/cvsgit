@@ -33,6 +33,28 @@ CREATE TABLE IF NOT EXISTS metodo (
 CREATE INDEX metodo_classe_in ON metodo(classe);
 
 /**
+ * Constants da classe, usando const
+ */
+CREATE TABLE IF NOT EXISTS classe_constant (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT, 
+  classe      INTEGER         DEFAULT NULL, 
+  nome        TEXT            DEFAULT NULL,
+  CONSTRAINT fk_classe_constant_classe FOREIGN KEY(classe) REFERENCES classe(id)
+);
+CREATE INDEX classe_constant_classe_in ON classe_constant(classe);
+
+/**
+ * Constants do arquivo, usando define()
+ */
+CREATE TABLE IF NOT EXISTS constant (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT, 
+  arquivo     INTEGER         DEFAULT NULL, 
+  nome        TEXT            DEFAULT NULL,
+  CONSTRAINT fk_constant_arquivo FOREIGN KEY(arquivo) REFERENCES arquivo(id)
+);
+CREATE INDEX constant_arquivo_in ON constant(arquivo);
+
+/**
  * Funcao
  */
 CREATE TABLE IF NOT EXISTS funcao (
@@ -51,6 +73,7 @@ CREATE TABLE IF NOT EXISTS require (
   arquivo           INTEGER         DEFAULT NULL, 
   arquivo_require   INTEGER         DEFAULT NULL, 
   linha             INTEGER         DEFAULT NULL, 
+  utiliza           BOOLEAN         DEFAULT FALSE,
   CONSTRAINT fk_require_arquivo         FOREIGN KEY(arquivo)         REFERENCES arquivo(id)
   CONSTRAINT fk_require_arquivo_require FOREIGN KEY(arquivo_require) REFERENCES arquivo(id)
 );

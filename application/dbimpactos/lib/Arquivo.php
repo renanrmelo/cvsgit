@@ -238,6 +238,39 @@ class Arquivo {
 		return Arquivo::TIPO_NAO_DEFINIDO;		
 	}
 
+  public static function getFuncoes($iArquivo) {
+    return Banco::getInstancia()->selectAll("SELECT * FROM funcao WHERE arquivo = {$iArquivo}");
+  }
+
+  public static function getConstantes($iArquivo) {
+    return Banco::getInstancia()->selectAll("SELECT * FROM constant WHERE arquivo = {$iArquivo}");
+  }
+
+  public static function getClasses($iArquivo) {
+   
+    $aClasses = array();
+    $aDadosClasses = Banco::getInstancia()->selectAll("SELECT id, nome FROM classe WHERE arquivo = {$iArquivo}");
+
+    foreach ( $aDadosClasses as $oDadosClasse ) {
+
+      $aClasses[$oDadosClasse->nome] = array(); 
+      $aMetodos = Banco::getInstancia()->selectAll("SELECT nome FROM metodo WHERE classe = {$oDadosClasse->id}");
+
+      foreach ( $aMetodos as $oDadosMetodo ) {
+        $aClasses[$oDadosClasse->nome]['method'] = $oDadosMetodo->nome;
+      }
+
+      $aConstants = Banco::getInstancia()->selectAll("SELECT nome FROM classe_constant WHERE classe = {$oDadosClasse->id}");
+
+      foreach ( $aConstants as $oDadosConstant ) {
+        $aClasses[$oDadosClasse->nome]['constant'] = $oDadosConstant->nome;
+      }
+
+    }
+
+    return $aClasses;
+  }
+
   public static function getArquivos($sDiretorio) {
 
     $aArquivos = array();
