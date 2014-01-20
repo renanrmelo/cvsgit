@@ -8,16 +8,7 @@ class DBFileParser extends FileParser {
 
   public function __construct($pathFile, $pathProject = '/var/www/dbportal_prj/') {
 
-    try {
-
-      parent::__construct($pathFile, $pathProject);
-
-    } catch (Exception $oException) {
-      
-      $oOutput = new \Symfony\Component\Console\Output\ConsoleOutput();
-      $oOutput->writeln('<error>' . $oErro->getMessage() . '</error>');
-    }
-
+    parent::__construct($pathFile, $pathProject);
     $this->processar();
   }
 
@@ -28,11 +19,11 @@ class DBFileParser extends FileParser {
 
     while($tokenizer->valid()) {
 
-      $token = $tokenizer->current();
+      $oToken = $tokenizer->current();
 
-      if ($token->getValue() === T_STRING) {
+      if ($oToken->getValue() === T_STRING) {
 
-        if ( $token->getCode() === 'db_utils' ) {
+        if ( $oToken->getCode() === 'db_utils' ) {
 
           $this->processarGetDao();
           continue;
@@ -60,19 +51,26 @@ class DBFileParser extends FileParser {
       return false;
     }
 
-    $token = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
+    $oToken = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
     
-    if (!$token) {
+    if (!$oToken) {
       return false;
     }
 
-    $sClasse = 'cl_' . $this->clearEncapsedString($token->getCode());
+    $sClasse = 'cl_' . $this->clearEncapsedString($oToken->getCode());
 
-    $this->declaring[] = array('line' => $token->getLine(), 'class' => $sClasse);
+    $this->declaring[] = array('line' => $oToken->getLine(), 'class' => $sClasse);
     return true;
   }
 
   public function processarFuncao() {
+
+    /**
+     * Debugar 
+     */
+    if ( !$this->tokenizer->valid() ) {
+      return false;
+    }
 
     $funcao = $this->tokenizer->current()->getCode();
     $linha  = $this->tokenizer->current()->getLine();

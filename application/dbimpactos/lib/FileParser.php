@@ -143,7 +143,7 @@ class FileParser {
     $this->brackets = 0;
   }
 
-  public function findToken($tokenName, $offset) {
+  public function findToken($tokenName, $offset, $seek = true) {
 
     $find = array(';', $tokenName);
 
@@ -162,10 +162,13 @@ class FileParser {
 
     $token = $this->tokenizer->offsetGet($index);
 
-    if ($offset > 0) {
-      $this->tokenizer->seek($index + 1);
-    } else {
-      $this->tokenizer->seek($indexBeforeFind + 1);
+    if ($seek) {
+
+      if ($offset > 0) {
+        $this->tokenizer->seek($index + 1);
+      } else {
+        $this->tokenizer->seek($indexBeforeFind + 1);
+      }
     }
 
     if ($token->getCode() == ';') {

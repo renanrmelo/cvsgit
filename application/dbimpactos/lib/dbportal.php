@@ -41,7 +41,7 @@ function getMenus() {
     file_put_contents(PATH . 'menu.cache', serialize($aMenus));
     return $aMenus;
 
-  } catch (Exception $oException) {
+  } catch (Exception $oErro) {
 
     $oOutput = new \Symfony\Component\Console\Output\ConsoleOutput();
     $oOutput->writeln('<error>' . $oErro->getMessage() . '</error>');

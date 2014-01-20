@@ -36,7 +36,7 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
 
       $this->tokens = array_map(function($token) {
         return new Token($token);
-      }, token_get_all($code));
+      }, @token_get_all($code));
 
       return true;
     }

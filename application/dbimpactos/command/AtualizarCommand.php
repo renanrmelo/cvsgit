@@ -165,7 +165,17 @@ class AtualizarCommand extends Command {
 
         $this->status("   arquivo[ $iIndice/$iTotalArquivos ] ", true);
 
-        $oFileParser = new DBFileParser($sArquivo);
+        try {
+
+          $oFileParser = new DBFileParser($sArquivo);
+
+        } catch (Exception $oErro) {
+
+          $oOutput = new \Symfony\Component\Console\Output\ConsoleOutput();
+          $oOutput->writeln("\n\n  <error> " . $oErro->getMessage() . "</error>\n");
+          continue;
+        }
+
         $iTotalLinhas = $oFileParser->getTotalLines();
 
         $oBanco->update('arquivo', array(
