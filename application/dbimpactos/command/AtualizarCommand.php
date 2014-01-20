@@ -5,7 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Exception, Banco, DBTokenizer, Arquivo;
+use Exception, Banco, DBFileParser, Arquivo;
 
 class AtualizarCommand extends Command {
 
@@ -42,7 +42,7 @@ class AtualizarCommand extends Command {
     require_once PATH . 'lib/Arquivo.php';
     require_once PATH . 'lib/Banco.php';
     require_once PATH . 'lib/dbportal.php';
-    require_once PATH . 'lib/DBTokenizer.php';
+    require_once PATH . 'lib/DBFileParser.php';
 
     $sDiretorioProjeto = $oInput->getOption('project');
 
@@ -165,8 +165,8 @@ class AtualizarCommand extends Command {
 
         $this->status("   arquivo[ $iIndice/$iTotalArquivos ] ", true);
 
-        $oTokenizer = new DBTokenizer($sArquivo);
-        $iTotalLinhas = $oTokenizer->getTotalLines();
+        $oFileParser = new DBFileParser($sArquivo);
+        $iTotalLinhas = $oFileParser->getTotalLines();
 
         $oBanco->update('arquivo', array(
           'caminho' => $sArquivo, 'modificado' => filemtime($sArquivo), 'linhas' => $iTotalLinhas
@@ -175,7 +175,7 @@ class AtualizarCommand extends Command {
         $oBanco->delete('metodo', "classe = (select id from classe where arquivo = $iArquivo)");
         $oBanco->delete('classe', "arquivo = $iArquivo");
 
-        foreach ( $oTokenizer->getClasses() as $sClasse => $aDadosClasse ) {
+        foreach ( $oFileParser->getClasses() as $sClasse => $aDadosClasse ) {
 
           $aMetodos = $aDadosClasse['method'];
           $aConstants = $aDadosClasse['constant'];
@@ -202,7 +202,7 @@ class AtualizarCommand extends Command {
          */
         $oBanco->delete('funcao', "arquivo = $iArquivo");
 
-        foreach ( $oTokenizer->getFunctions() as $aDadosFuncao ) {
+        foreach ( $oFileParser->getFunctions() as $aDadosFuncao ) {
           $oBanco->insert('funcao', array('arquivo' => $iArquivo, 'nome' => $aDadosFuncao['function']));
         }
 
@@ -211,14 +211,14 @@ class AtualizarCommand extends Command {
          */
         $oBanco->delete('constant', "arquivo = $iArquivo");
 
-        foreach ( $oTokenizer->getConstants() as $aDadosConstant ) {
+        foreach ( $oFileParser->getConstants() as $aDadosConstant ) {
           $oBanco->insert('constant', array('arquivo' => $iArquivo, 'nome' => $aDadosConstant['name']));
         }
 
         /**
          * Salva log de erros 
          */
-        $sMensagemLog = $oTokenizer->getLog();
+        $sMensagemLog = $oFileParser->getLog();
         $oBanco->delete('log', "arquivo = $iArquivo");
         
         if ( !empty($sMensagemLog) ) {
@@ -240,8 +240,8 @@ class AtualizarCommand extends Command {
         }
 
         $iArquivo         = $aArquivoID[$sArquivo];
-        $oTokenizer       = new DBTokenizer($sArquivo);
-        $aArquivosRequire = $oTokenizer->getRequires();
+        $oFileParser       = new DBFileParser($sArquivo);
+        $aArquivosRequire = $oFileParser->getRequires();
         $sMensagemLog     = "";
 
         foreach ($aArquivosRequire as $aDadosArquivoRequire ) {
@@ -260,7 +260,7 @@ class AtualizarCommand extends Command {
 
           $iArquivoRequire = $aArquivoID[$sArquivoRequire]; 
 
-          $lUtiliza = $this->verificaUtilizacaoArquivo($oTokenizer, $iArquivoRequire);
+          $lUtiliza = $this->verificaUtilizacaoArquivo($oFileParser, $iArquivoRequire);
 
           $oBanco->insert('require', array(
             'arquivo' => $iArquivo, 'arquivo_require' => $iArquivoRequire, 'linha' => $iLinhaRequire, 'utiliza' => $lUtiliza 
@@ -268,7 +268,7 @@ class AtualizarCommand extends Command {
 
         }
 
-        foreach ( $oTokenizer->getDeclaring() as $aDadosDeclaracao ) {
+        foreach ( $oFileParser->getDeclaring() as $aDadosDeclaracao ) {
 
           $sClasse = $aDadosDeclaracao['class'];
           $iLinhaDeclaracao = $aDadosDeclaracao['line'];
@@ -376,16 +376,21 @@ class AtualizarCommand extends Command {
       
   }
 
-  public function verificaUtilizacaoArquivo($oTokenizer, $iArquivoRequirido) {
+  /**
+   * verifica as reais dependencias externas do arquivo
+   *
+   * @todo - crir funcao recursiva para buscar dependencias tamem nos arquivos requeridos, $oFileParser->getRequires()
+   */
+  public function verificaUtilizacaoArquivo($oFileParser, $iArquivoRequirido) {
 
     $aFuncoes    = Arquivo::getFuncoes($iArquivoRequirido);
     $aConstantes = Arquivo::getConstantes($iArquivoRequirido);
     $aClasses    = Arquivo::getClasses($iArquivoRequirido);
 
-    $aDeclarados = $oTokenizer->getDeclaring();
+    $aDeclarados = $oFileParser->getDeclaring();
 
-    $aFuncoesUtilizadas = $oTokenizer->getFuncoesUtilizadas();
-    $aConstantesUtilizadas = $oTokenizer->getConstantesUtilizadas();
+    $aFuncoesUtilizadas = $oFileParser->getFuncoesUtilizadas();
+    $aConstantesUtilizadas = $oFileParser->getConstantesUtilizadas();
 
     foreach ( $aFuncoes as $oFuncao ) {
 

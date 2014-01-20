@@ -20,24 +20,34 @@ function conectarDicionarioDados() {
 
 function getMenus() {
 
-  $conexao = conectarDicionarioDados();
+  try {
+    $conexao = conectarDicionarioDados();
 
-  $rsMenus = pg_query($conexao, "
-    select id_item as id, funcao as programa, fc_montamenu(id_item) as caminho 
-      from db_itensmenu
-     where trim(funcao) != '' and trim(funcao) is not null 
-       and fc_montamenu(id_item) is not null
-  ");
+    $rsMenus = pg_query($conexao, "
+      select id_item as id, funcao as programa, fc_montamenu(id_item) as caminho 
+        from db_itensmenu
+       where trim(funcao) != '' and trim(funcao) is not null 
+         and fc_montamenu(id_item) is not null
+    ");
 
-  $aMenus = array();
-  
-  while ( $oMenu = pg_fetch_object($rsMenus) ) {
+    $aMenus = array();
+    
+    while ( $oMenu = pg_fetch_object($rsMenus) ) {
 
-    $oMenu->caminho = toUTF8($oMenu->caminho);
-    $aMenus[] = $oMenu;
+      $oMenu->caminho = toUTF8($oMenu->caminho);
+      $aMenus[] = $oMenu;
+    }
+
+    file_put_contents(PATH . 'menu.cache', serialize($aMenus));
+    return $aMenus;
+
+  } catch (Exception $oException) {
+
+    $oOutput = new \Symfony\Component\Console\Output\ConsoleOutput();
+    $oOutput->writeln('<error>' . $oErro->getMessage() . '</error>');
+    return unserialize(file_get_contents(PATH . 'menu.cache'));
   }
 
-  return $aMenus;
 }
 
 function toUTF8($sText) {
@@ -46,95 +56,49 @@ function toUTF8($sText) {
 
 function db_autoload($sClassName, $sDiretorioProjeto = '/var/www/dbportal_prj/') {
 
-  $aIncludeDirs = array();
-
-  $aIncludeDirs[] = "model/";
-  $aIncludeDirs[] = "model/pessoal/";
-  $aIncludeDirs[] = "model/pessoal/std/";
-  $aIncludeDirs[] = "model/pessoal/arquivos/";
-  $aIncludeDirs[] = "model/pessoal/arquivos/dirf/";
-  $aIncludeDirs[] = "model/pessoal/arquivos/siprev/";
-  $aIncludeDirs[] = "model/pessoal/relatorios/";
-  $aIncludeDirs[] = "model/compras/";
-  $aIncludeDirs[] = "model/orcamento/";
-  $aIncludeDirs[] = "model/orcamento/programa/";
-  $aIncludeDirs[] = "model/orcamento/suplementacao/";
-  $aIncludeDirs[] = "model/arrecadacao/";
-  $aIncludeDirs[] = "model/caixa/";
-  $aIncludeDirs[] = "model/caixa/arquivos/";
-  $aIncludeDirs[] = "model/caixa/slip/";
-  $aIncludeDirs[] = "model/educacao/";
-  $aIncludeDirs[] = "model/educacao/avaliacao/";
-  $aIncludeDirs[] = "model/educacao/censo/";
-  $aIncludeDirs[] = "model/educacao/progressaoparcial/";
-  $aIncludeDirs[] = "model/educacao/ocorrencia/";
-  $aIncludeDirs[] = "model/habitacao/";
-  $aIncludeDirs[] = "model/divida/";
-  $aIncludeDirs[] = "model/viradaIPTU/";
-  $aIncludeDirs[] = "model/cadastro/";
-  $aIncludeDirs[] = "model/recursosHumanos/";
-  $aIncludeDirs[] = "model/farmacia/";
-  $aIncludeDirs[] = "model/juridico/";
-  $aIncludeDirs[] = "model/estoque/";
-  $aIncludeDirs[] = "model/diversos/";
-  $aIncludeDirs[] = "model/contabilidade/";
-  $aIncludeDirs[] = "model/contabilidade/contacorrente/";
-  $aIncludeDirs[] = "model/contabilidade/arquivos/";
-  $aIncludeDirs[] = "model/contabilidade/arquivos/sigfis/";
-  $aIncludeDirs[] = "model/contabilidade/relatorios/";
-  $aIncludeDirs[] = "model/contabilidade/relatorios/sigfis/";
-  $aIncludeDirs[] = "model/contabilidade/lancamento/";
-  $aIncludeDirs[] = "model/contabilidade/planoconta/";
-  $aIncludeDirs[] = "model/issqn/";
-  $aIncludeDirs[] = "model/patrimonio/";
-  $aIncludeDirs[] = "model/patrimonio/depreciacao/";
-  $aIncludeDirs[] = "model/contrato/";
-  $aIncludeDirs[] = "model/ambulatorial/";
-  $aIncludeDirs[] = "model/financeiro/";
-  $aIncludeDirs[] = "model/empenho/";
-  $aIncludeDirs[] = "model/protocolo/";
-  $aIncludeDirs[] = "model/configuracao/";
-  $aIncludeDirs[] = "model/configuracao/avaliacao/";
-  $aIncludeDirs[] = "model/configuracao/notificacao/";
-  $aIncludeDirs[] = "model/configuracao/inconsistencia/";
-  $aIncludeDirs[] = "model/configuracao/inconsistencia/educacao/";
-  $aIncludeDirs[] = "model/social/";
-  $aIncludeDirs[] = "model/social/cadastrounico/";
-  $aIncludeDirs[] = "model/veiculos/";
-  $aIncludeDirs[] = "model/webservices/";
-
-  /**
-   * Opcoes alternativas aos diretorios padroes  
-   */
-  $aExceptions[]  = "std/";
-  $aExceptions[]  = "std/exceptions/";
-
-  foreach($aExceptions as $sDiretorioExcecao) {
-
-    $sCaminhoArquivo = $sDiretorioProjeto .$sDiretorioExcecao . $sClassName . '.php'; 
-
-    if ( file_exists($sCaminhoArquivo) ) {
-      return $sCaminhoArquivo;
-    } 
-  }
-
   if (substr($sClassName, 0, 3) == 'cl_') {
 
-    $sClassNameDao = $sDiretorioProjeto . str_replace("cl_", "db_", $sClassName);
+    $sClassNameDao = $sDiretorioProjeto . 'classes/' . str_replace("cl_", "db_", $sClassName) . '_classe.php';
+
     if ( file_exists($sClassNameDao) ) {
-      return "classes/{$sClassNameDao}_classe.php";
+      return $sClassNameDao;
     }
 
-  } else {
+    return false;
+  } 
 
-    foreach($aIncludeDirs as $sDirectory) {
+  $aDiretorios = array('model', 'libs', 'std');
+  $aIgnorar = array('.', '..');
 
-      $sFile = "{$sDiretorioProjeto}{$sDirectory}{$sClassName}.model.php";
+  foreach ($aDiretorios as $sDiretorio) {
 
-      if (file_exists($sFile)) {
-        return $sFile;
+    $oDiretorio = new RecursiveDirectoryIterator($sDiretorioProjeto . $sDiretorio);
+    $oDiretorioIterator = new RecursiveIteratorIterator($oDiretorio, RecursiveIteratorIterator::SELF_FIRST);
+
+    foreach($oDiretorioIterator as $sCaminhoArquivo => $oArquivo) {
+
+      if ( $oArquivo->isDir() ) {
+        continue;
       }
-    }
+
+      if ( !in_array($oArquivo->getExtension(), array('php')) ) {
+        continue;
+      }
+
+      if ( in_array($oArquivo->getFileName(), $aIgnorar) ) {
+        continue;
+      }
+
+      if (strtolower($oArquivo->getFileName()) == strtolower($sClassName) . '.model.php') {
+        return $sCaminhoArquivo;
+      }
+
+      if (strtolower($oArquivo->getFileName()) == strtolower($sClassName) . '.php') {
+        return $sCaminhoArquivo;
+      } 
+
+    } 
+
   }
 
   return false;

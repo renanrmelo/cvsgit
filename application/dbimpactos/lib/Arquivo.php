@@ -287,10 +287,7 @@ class Arquivo {
         continue;
       }
 
-      /**
-       * WTF?? >>> /var/www/dbportal_prj/forms/db_frm%.php 
-       */
-      if ( in_array($oArquivo->getFileName(), array('.', '..', 'db_frm%.php', 'pes2_analitica002-5.php')) ) {
+      if ( in_array($oArquivo->getFileName(), array('.', '..')) ) {
         continue;
       }
 
