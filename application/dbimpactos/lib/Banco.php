@@ -5,7 +5,7 @@
  * 
  * @uses PDO
  * @package Library 
- * @version $id$
+ * @version 1.0
  */
 class Banco extends PDO {
 	

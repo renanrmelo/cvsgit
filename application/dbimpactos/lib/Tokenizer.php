@@ -36,7 +36,7 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
 
       $this->tokens = array_map(function($token) {
         return new Token($token);
-      }, @token_get_all($code));
+      }, token_get_all($code));
 
       return true;
     }
@@ -45,8 +45,8 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
       return $this->tokens = $code; 
     }
     
-    throw new InvalidArgumentException('The tokenizer either expects a string of code or an array of Tokens.');
- }
+    throw new InvalidArgumentException('The tokenizer expects a string or array.');
+  }
 
   /**
    * Move to the next token and return it. Returns null if there are no more tokens.

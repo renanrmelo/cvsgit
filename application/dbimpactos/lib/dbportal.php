@@ -20,7 +20,10 @@ function conectarDicionarioDados() {
 
 function getMenus() {
 
+  return unserialize(file_get_contents(PATH . 'menu.cache'));
+    
   try {
+
     $conexao = conectarDicionarioDados();
 
     $rsMenus = pg_query($conexao, "

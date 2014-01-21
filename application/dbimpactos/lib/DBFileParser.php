@@ -87,6 +87,10 @@ class DBFileParser extends FileParser {
 
   public function processarConstante() {
 
+    if (!$this->tokenizer->valid()) {
+      return false;
+    }
+
     $sConstante = $this->tokenizer->current()->getCode();
     $linha = $this->tokenizer->current()->getLine();   
 
