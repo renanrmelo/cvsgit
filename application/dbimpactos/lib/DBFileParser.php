@@ -28,14 +28,6 @@ class DBFileParser extends FileParser {
           $this->processarGetDao();
           continue;
         }
-
-        /**
-         * Token é string
-         * - Caso não encontre funcao procura constant
-         */
-        if (!$this->processarFuncao()) {
-          $this->processarConstante();
-        }
       }
 
       $tokenizer->next();
@@ -45,9 +37,9 @@ class DBFileParser extends FileParser {
 
   public function processarGetDao() {
     
-    $tokenValido = $this->findTokenForward(T_STRING);
+    $oProximoToken = $this->findTokenForward(T_STRING);
 
-    if (!$tokenValido || $tokenValido->getCode() !== 'getDao') {
+    if (!$oProximoToken || $oProximoToken->getCode() !== 'getDao') {
       return false;
     }
 
@@ -61,53 +53,6 @@ class DBFileParser extends FileParser {
 
     $this->declaring[] = array('line' => $oToken->getLine(), 'class' => $sClasse);
     return true;
-  }
-
-  public function processarFuncao() {
-
-    /**
-     * Debugar 
-     */
-    if ( !$this->tokenizer->valid() ) {
-      return false;
-    }
-
-    $funcao = $this->tokenizer->current()->getCode();
-    $linha  = $this->tokenizer->current()->getLine();
-
-    $oTokenValidaFuncao = $this->findTokenForward('(');
-
-    if (!$oTokenValidaFuncao) {
-      return false;
-    }
-
-    $this->aFuncoesUtilizadas[] = $funcao;
-    return true;
-  }
-
-  public function processarConstante() {
-
-    if (!$this->tokenizer->valid()) {
-      return false;
-    }
-
-    $sConstante = $this->tokenizer->current()->getCode();
-    $linha = $this->tokenizer->current()->getLine();   
-
-    if (in_array(strtoupper($sConstante), array(FALSE, TRUE, NULL)) ) { 
-      return false;
-    }
-
-    $this->aConstantesUtilizadas[] = $sConstante;
-    return true;
-  }
-
-  public function getFuncoesUtilizadas() {
-    return $this->aFuncoesUtilizadas;
-  }
-
-  public function getConstantesUtilizadas() {
-    return $this->aConstantesUtilizadas;
   }
 
 }

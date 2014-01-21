@@ -23,6 +23,9 @@ class FileParser {
   protected $declaring = array();
   protected $constants = array();
 
+  protected $constantsUsed = array();
+  protected $functionsUsed = array();
+
   protected $log = "";
   protected $currentClassName;
   protected $brackets;
@@ -78,59 +81,60 @@ class FileParser {
         $this->brackets--;
       }
 
-      if ( in_array($token->getValue(), $this->typeRequire) ) {
+      if (in_array($token->getValue(), $this->typeRequire)) {
 
         $this->parseRequire();
         continue;
       }
 
-      if ( $token->getValue() === T_NEW ) {
+      if ($token->is(T_NEW)) {
 
         $this->parseDeclaring();
         continue;
       }
 
-      if ( $token->getValue() === T_CLASS ) {
+      if ($token->is(T_CLASS)) {
 
         $this->parseClass();
         continue;
       }
 
-      if ( $token->getValue() === T_FUNCTION ) {
+      if ($token->is(T_FUNCTION)) {
 
         $this->parseFunction();
         continue;
       }
 
-      if ( $token->getValue() === T_CONST) {
+      if ($token->is(T_CONST)) {
 
         $this->parseConstant();
         continue;
       }
 
-      if ( $token->getValue() === T_STRING && strtolower($token->getCode()) === 'define' ) {
+      if ($token->is(T_CONSTANT_ENCAPSED_STRING) || $token->is(T_ENCAPSED_AND_WHITESPACE)) {
 
-        $this->parseConstantDefined();
+        $this->parseEncapsedString();
         continue;
       }
 
-      if ( $token->getValue() === T_CONSTANT_ENCAPSED_STRING || $token->getValue() === T_ENCAPSED_AND_WHITESPACE ) {
-
-        $this->parseString();
-        continue;
-      }
-
-      if ( $token->getValue() === T_DOUBLE_COLON) {
+      if ($token->is(T_DOUBLE_COLON)) {
         
         $this->parseStatic();
         continue;
       }
 
-      if ( $token->getValue() === T_INLINE_HTML ) {
+      if ($token->is(T_INLINE_HTML)) {
 
         $this->parseHTML();
         continue;
       }
+
+      if ($token->is(T_STRING)) {
+
+        $this->parseString();
+        continue;
+      }
+
 
       $tokenizer->next();
     }
@@ -141,6 +145,17 @@ class FileParser {
 
     $this->tokenizer->rewind();
     $this->brackets = 0;
+  }
+
+  public function getNextToken() {
+
+    $this->tokenizer->next();
+
+    if ($this->tokenizer->current()->is(T_WHITESPACE)) {
+      return $this->getNextToken();
+    } 
+
+    return $this->tokenizer->current();
   }
 
   public function findToken($tokenName, $offset, $seek = true) {
@@ -322,15 +337,14 @@ class FileParser {
     return true; 
   }
 
-  public function parseString() {
+  public function parseEncapsedString() {
 
     $token = $this->tokenizer->current();
     $string = $token->getCode();
-
-    $this->tokenizer->next();
-
     $line = $token->getLine();
     $files = $this->getFileName($string);
+
+    $this->tokenizer->next();
 
     if ( empty($files) ) {
       return false;
@@ -349,7 +363,7 @@ class FileParser {
       if ( empty($requireFile) ) {
 
         $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-        $this->log .= " FileParser::parseString(): " .$this->pathFile . " : " . $line;
+        $this->log .= " FileParser::parseEncapsedString(): " .$this->pathFile . " : " . $line;
         $this->log .= "\n - Arquivo de require não encontrado : ";
         $this->log .= "\n " . $this->pathRequire . $require ."  || " . $this->pathProject . $require;
         $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
@@ -363,18 +377,7 @@ class FileParser {
 
   public function parseStatic() {
 
-    // echo "\n\n", str_repeat('-', 80), "\n";
-    // print_r($this->tokenizer->current());
-    // $this->tokenizer->prev();
-    // print_r($this->tokenizer->current());
-    // $this->tokenizer->next();
-    // $this->tokenizer->next();
-    // print_r($this->tokenizer->current());
-    // echo "\n", str_repeat('-', 80), "\n";
-    // echo "\n- current: " . $this->tokenizer->key(), "\n";
-
     $token = $this->findTokenBackward(T_STRING);
-
     // @todo - verificar se é metodo ou constant    
     //$value = $this->parseNext(T_STRING); 
     
@@ -438,6 +441,53 @@ class FileParser {
     } 
   }
 
+  public function parseString() {
+
+    /**
+     * token : define() 
+     */
+    if (strtolower($this->tokenizer->current()->getCode()) === 'define' ) {
+      return $this->parseConstantDefined();
+    }
+
+    $token = $this->tokenizer->current();
+
+    $code = $this->tokenizer->current()->getCode();
+
+    /**
+     * token : constant 
+     */
+    if (!$this->getNextToken()->is('(')) {
+
+      if (in_array(strtoupper($code), array('FALSE', 'TRUE', 'NULL')) ) { 
+        return false;
+      }
+
+      if (in_array($code, $this->constantsUsed)) {
+        return false;
+      }
+
+      $this->constantsUsed[] = $code;
+      return true;
+    }
+
+    if ($code == 'null') {
+
+      print_r($token);
+      exit;
+    }
+
+    /**
+     * token : function 
+     */
+    if (in_array($code, $this->functionsUsed)) {
+      return false;
+    }
+
+    $this->functionsUsed[] = $code;
+    return true; 
+  }
+
   public function getClasses() {
     return $this->classes;
   }
@@ -458,6 +508,14 @@ class FileParser {
     return $this->constants;
   }
 
+  public function getConstantsUsed() {
+    return $this->constantsUsed;
+  }
+
+  public function getFunctionsUsed() {
+    return $this->functionsUsed;
+  }
+
   public function getLog() {
     return $this->log;
   }
@@ -470,17 +528,21 @@ class FileParser {
 
 // $file = new FileParser('/var/www/dbportal_prj/model/dataManager.php');
 // $file = new FileParser('/var/www/dbportal_prj/pes2_cadferiasmes001.php');
-// $file = new FileParser('/var/www/dbportal_prj/libs/db_stdlib.php');
-// 
-// echo "\ncontants: \n";
-// print_r($file->getConstants());
-// echo "\nclasses: \n";
-// print_r($file->getClasses());
-// echo "\nfunctions: \n";
-// print_r($file->getFunctions());
-// echo "\nrequires: \n";
-// print_r($file->getRequires());
-// echo "\ndeclaring: \n";
-// print_r($file->getDeclaring());
-// echo "\nlog: \n";
-// print_r($file->getLog());
+$file = new FileParser('/var/www/dbportal_prj/libs/db_stdlib.php');
+ 
+echo "\ncontants: \n";
+print_r($file->getConstants());
+echo "\nclasses: \n";
+print_r($file->getClasses());
+echo "\nfunctions: \n";
+print_r($file->getFunctions());
+echo "\nrequires: \n";
+print_r($file->getRequires());
+echo "\ndeclaring: \n";
+print_r($file->getDeclaring());
+echo "\nfunction used: \n";
+print_r($file->getFunctionsUsed());
+echo "\nconstants used: \n";
+print_r($file->getConstantsUsed());
+echo "\nlog: \n";
+print_r($file->getLog());

@@ -399,8 +399,8 @@ class AtualizarCommand extends Command {
 
     $aDeclarados = $oFileParser->getDeclaring();
 
-    $aFuncoesUtilizadas = $oFileParser->getFuncoesUtilizadas();
-    $aConstantesUtilizadas = $oFileParser->getConstantesUtilizadas();
+    $aFuncoesUtilizadas = $oFileParser->getFunctionsUsed();
+    $aConstantesUtilizadas = $oFileParser->getConstantsUsed();
 
     foreach ( $aFuncoes as $oFuncao ) {
 

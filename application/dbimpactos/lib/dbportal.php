@@ -8,7 +8,7 @@ function conectarDicionarioDados() {
 	$DB_USUARIO  = "ecidade";
 	$DB_SENHA    = "";
 
-	$conexao = @pg_connect("host=$DB_SERVIDOR  dbname=$DB_BASE  port=$DB_PORTA user=$DB_USUARIO password=$DB_SENHA");
+	$conexao = @pg_connect("host=$DB_SERVIDOR dbname=$DB_BASE port=$DB_PORTA user=$DB_USUARIO password=$DB_SENHA");
 			
 	if ( !$conexao ) {
 		throw new Exception('Erro ao conectar ao banco: ' . $DB_SERVIDOR);
@@ -20,8 +20,6 @@ function conectarDicionarioDados() {
 
 function getMenus() {
 
-  return unserialize(file_get_contents(PATH . 'menu.cache'));
-    
   try {
 
     $conexao = conectarDicionarioDados();
