@@ -29,11 +29,7 @@ class FileParser {
   protected $log = "";
   protected $currentClassName;
   protected $brackets;
-  protected $typeRequire = array(T_REQUIRE, T_REQUIRE_ONCE, T_INCLUDE, T_INCLUDE_ONCE);
 
-  /**
-   * @todo - adicionar .js 
-   */
   const FILE_PATTERN = '/\b(?P<files>[\/\w-.]+\.php)\b/mi';
 
   public function __construct($pathFile, $pathProject = '/var/www/dbportal_prj/') {
@@ -71,70 +67,52 @@ class FileParser {
 
     while ($tokenizer->valid()) {
 
-      $token = $tokenizer->current();
+      switch ($tokenizer->current()->getValue()) {
 
-      if ($token->isOpeningBrace()) {
-        $this->brackets++;
-      }
+        case $tokenizer->current()->isOpeningBrace() :
+          $this->brackets++;
+        break;
 
-      if ($token->isClosingBrace()) {
-        $this->brackets--;
-      }
+        case $tokenizer->current()->isClosingBrace() :
+          $this->brackets--;
+        break;
+          
+        case T_REQUIRE:
+        case T_INCLUDE: 
+        case T_REQUIRE_ONCE:
+        case T_INCLUDE_ONCE:
+          $this->parseRequire();
+        break;
 
-      if (in_array($token->getValue(), $this->typeRequire)) {
+        case T_NEW :
+          $this->parseDeclaring();
+        break;
+          
+        case T_CLASS :
+          $this->parseClass();
+        break;
 
-        $this->parseRequire();
-        continue;
-      }
-
-      if ($token->is(T_NEW)) {
-
-        $this->parseDeclaring();
-        continue;
-      }
-
-      if ($token->is(T_CLASS)) {
-
-        $this->parseClass();
-        continue;
-      }
-
-      if ($token->is(T_FUNCTION)) {
-
-        $this->parseFunction();
-        continue;
-      }
-
-      if ($token->is(T_CONST)) {
-
-        $this->parseConstant();
-        continue;
-      }
-
-      if ($token->is(T_CONSTANT_ENCAPSED_STRING) || $token->is(T_ENCAPSED_AND_WHITESPACE)) {
-
-        $this->parseEncapsedString();
-        continue;
-      }
-
-      if ($token->is(T_DOUBLE_COLON)) {
+        case T_FUNCTION:
+          $this->parseFunction();
+        break;
         
-        $this->parseStatic();
-        continue;
+        case T_CONST:
+          $this->parseConstant();
+        break;
+        
+        case T_CONSTANT_ENCAPSED_STRING:
+        case T_ENCAPSED_AND_WHITESPACE:
+          $this->parseEncapsedString();
+        break;
+        
+        case T_INLINE_HTML:
+          $this->parseHTML();
+        break;
+        
+        case T_STRING:
+          $this->parseString();
+        break;
       }
-
-      if ($token->is(T_INLINE_HTML)) {
-
-        $this->parseHTML();
-        continue;
-      }
-
-      if ($token->is(T_STRING)) {
-
-        $this->parseString();
-        continue;
-      }
-
 
       $tokenizer->next();
     }
@@ -147,58 +125,59 @@ class FileParser {
     $this->brackets = 0;
   }
 
-  public function getNextToken() {
+  public function getNextToken($indexSeek = 1) {
 
-    $this->tokenizer->next();
+    $tokenizer = clone $this->tokenizer;
+    $tokenizer->seek($tokenizer->key() + $indexSeek);
 
-    if ($this->tokenizer->current()->is(T_WHITESPACE)) {
-      return $this->getNextToken();
+    if ($tokenizer->current()->is(T_WHITESPACE)) {
+      $tokenizer->next();
     } 
 
-    return $this->tokenizer->current();
+    return $tokenizer->current();
   }
 
-  public function findToken($tokenName, $offset, $seek = true) {
+  public function getPrevToken($indexSeek = 1) {
 
-    $find = array(';', $tokenName);
+    $tokenizer = clone $this->tokenizer;
+    $tokenizer->seek($tokenizer->key() - $indexSeek);
 
-    if (is_array($tokenName)) {
+    if ($tokenizer->current()->is(T_WHITESPACE)) {
+      $tokenizer->prev();
+    } 
 
-      $find = $tokenName;
-      array_unshift($find, ';');
+    return $tokenizer->current();
+  }
+
+  public function findToken($find, $offset = 0, $tokenStop = ';', $direction = Tokenizer::FIND_TOKEN_FORWARD) {
+
+    $tokens = array($tokenStop, $find);
+
+    if (is_array($find)) {
+
+      $tokens = $find;
+      array_unshift($tokens, $tokenStop);
     }
 
-    $indexBeforeFind = $this->tokenizer->key();
-    $index = $this->tokenizer->findToken($find, $offset);
+    $index = $this->tokenizer->findToken($tokens, $offset, $direction);
 
     if (!$index) {
       return false;
     }
 
-    $token = $this->tokenizer->offsetGet($index);
-
-    if ($seek) {
-
-      if ($offset > 0) {
-        $this->tokenizer->seek($index + 1);
-      } else {
-        $this->tokenizer->seek($indexBeforeFind + 1);
-      }
-    }
-
-    if ($token->getCode() == ';') {
+    if ($this->tokenizer->offsetGet($index)->is($tokenStop)) {
       return false;
     }
 
-    return $token; 
+    return $index; 
   }
 
-  public function findTokenForward($tokenName) {
-    return $this->findToken($tokenName, $this->tokenizer->key());
+  public function findTokenForward($find, $tokenStop = ';') {
+    return $this->findToken($find, $this->tokenizer->key(), $tokenStop, Tokenizer::FIND_TOKEN_FORWARD);
   }
 
-  public function findTokenBackward($tokenName) {
-    return $this->findToken($tokenName, $this->tokenizer->key() * -1);
+  public function findTokenBackward($find, $tokenStop = ';') {
+    return $this->findToken($find, $this->tokenizer->key(), $tokenStop, Tokenizer::FIND_TOKEN_BACKWARD);
   }
 
   public function clearEncapsedString($string) {
@@ -207,17 +186,7 @@ class FileParser {
 
   public function getFileName($string) {
 
-    $found = false;
-    foreach (array('.php', '.js') as $extension) {
-
-      if ( strpos($string, $extension) !== false ) {
-
-        $found = true;
-        break;
-      }
-    } 
-
-    if (!$found) {
+    if ( strpos($string, '.php') === false ) {
       return false;
     }
 
@@ -227,13 +196,14 @@ class FileParser {
 
   public function parseRequire() {
 
-    $current = $this->tokenizer->key();
-    $token = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
+    $index = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
 
-    if ( !$token ) {
+    if (!$index) {
       return false; 
     }
-    
+
+    $this->tokenizer->seek($index);
+    $token = $this->tokenizer->offsetGet($index);
     $line = $token->getLine();
     $require = $this->clearEncapsedString($token->getCode());
     $requireFile = $this->pathRequire . $require; 
@@ -260,13 +230,16 @@ class FileParser {
 
   public function parseDeclaring() {
 
-    $token = $this->findTokenForward(T_STRING);
+    $index = $this->findTokenForward(T_STRING);
 
-    if ( !$token ) {
+    if (!$index) {
       return false; 
     }
 
-    if ( in_array($token->getCode(), array('stdClass', 'Exception')) ) {
+    $this->tokenizer->seek($index);
+    $token = $this->tokenizer->offsetGet($index);
+
+    if (in_array(strtolower($token->getCode()), array('stdclass', 'exception'))) {
       return false;
     } 
 
@@ -276,23 +249,28 @@ class FileParser {
 
   public function parseClass() {
 
-    $token = $this->findTokenForward(T_STRING);
+    $index = $this->findTokenForward(T_STRING);
 
-    if ( !$token ) {
+    if (!$index) {
       return false; 
     }
 
+    $this->tokenizer->seek($index);
+    $token = $this->tokenizer->offsetGet($index);
     $this->currentClassName = $token->getCode();
     $this->classes[$this->currentClassName] = array('line' => $token->getLine(), 'method' => array(), 'constant' => array());
   }
 
   public function parseFunction() {
 
-    $token = $this->findTokenForward(T_STRING);
+    $index = $this->findTokenForward(T_STRING);
 
-    if ( !$token ) {
+    if (!$index) {
       return false; 
     }
+
+    $this->tokenizer->seek($index);
+    $token = $this->tokenizer->offsetGet($index);
 
     if ( $this->brackets === 0 ) {
       $this->currentClassName = null;
@@ -309,11 +287,14 @@ class FileParser {
 
   public function parseConstant() {
     
-    $token = $this->findTokenForward(T_STRING);
+    $index = $this->findTokenForward(T_STRING);
 
-    if ( !$token ) {
+    if (!$index) {
       return false; 
     }
+
+    $this->tokenizer->seek($index);
+    $token = $this->tokenizer->offsetGet($index);
 
     if ( empty($this->currentClassName) ) {
 
@@ -327,12 +308,14 @@ class FileParser {
 
   public function parseConstantDefined() {
 
-    $token = $this->findTokenForward(T_STRING);
+    $index = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
 
-    if ( !$token ) {
+    if (!$index) {
       return false; 
     }
 
+    $this->tokenizer->seek($index);
+    $token = $this->tokenizer->offsetGet($index);
     $this->constants[] = array('line' => $token->getLine(), 'name' => $this->clearEncapsedString($token->getCode()));
     return true; 
   }
@@ -343,8 +326,6 @@ class FileParser {
     $string = $token->getCode();
     $line = $token->getLine();
     $files = $this->getFileName($string);
-
-    $this->tokenizer->next();
 
     if ( empty($files) ) {
       return false;
@@ -375,19 +356,20 @@ class FileParser {
 
   }
 
+  // @todo - verificar se é metodo ou constant    
   public function parseStatic() {
 
-    $token = $this->findTokenBackward(T_STRING);
-    // @todo - verificar se é metodo ou constant    
-    //$value = $this->parseNext(T_STRING); 
-    
-    if (!$token) {
-      return false;
-    }
-
+    $token = $this->getNextToken();
     $ignore = array('SELF', '__CLASS__', strtoupper($this->currentClassName));
 
     if (in_array(strtoupper($token->getCode()), $ignore)) {
+      return false;
+    }
+
+    /**
+     * Metodo statico 
+     */
+    if ($token->is(T_DOUBLE_COLON)) {
       return false;
     }
 
@@ -401,8 +383,6 @@ class FileParser {
     $string = $token->getCode();
     $lines = explode("\n", $token->getCode());
     $currentLine = $token->getLine();
-
-    $this->tokenizer->next();
 
     foreach ($lines as $contentLine) {
 
@@ -444,42 +424,74 @@ class FileParser {
   public function parseString() {
 
     /**
-     * token : define() 
+     * Define constant
      */
-    if (strtolower($this->tokenizer->current()->getCode()) === 'define' ) {
+    if ($this->tokenizer->current()->is('define')) {
       return $this->parseConstantDefined();
     }
 
-    $token = $this->tokenizer->current();
+    /**
+     * Static method or constant 
+     */
+    if ($this->getNextToken()->is(T_DOUBLE_COLON)) {
+      return $this->parseStatic();
+    }
+      
+    /**
+     * Function
+     */
+    if ($this->getNextToken()->is('(')) {
+      return $this->parseFunctionUsed();
+    }
+
+    if ($this->findTokenBackward(T_CATCH)) {
+      return false;
+    }
+
+    if ($this->findTokenBackward(T_OBJECT_OPERATOR)) {
+      return false;
+    }
+
+    /**
+     * Constant 
+     */
+    return $this->parseConstantUsed();
+  }
+
+  public function parseConstantUsed() {
 
     $code = $this->tokenizer->current()->getCode();
 
-    /**
-     * token : constant 
-     */
-    if (!$this->getNextToken()->is('(')) {
+    if ( $code == 'janela') {
 
-      if (in_array(strtoupper($code), array('FALSE', 'TRUE', 'NULL')) ) { 
-        return false;
-      }
+      print_r($this->getPrevToken(3));
+      print_r($this->getPrevToken(2));
+      print_r($this->getPrevToken());
 
-      if (in_array($code, $this->constantsUsed)) {
-        return false;
-      }
+      print_r($this->tokenizer->current());
 
-      $this->constantsUsed[] = $code;
-      return true;
-    }
-
-    if ($code == 'null') {
-
-      print_r($token);
+      print_r($this->getNextToken());
+      print_r($this->getNextToken(2));
+      print_r($this->getNextToken(3));
       exit;
     }
 
-    /**
-     * token : function 
-     */
+    if (in_array(strtoupper($code), array('FALSE', 'TRUE', 'NULL')) ) { 
+      return false;
+    }
+
+    if (in_array($code, $this->constantsUsed)) {
+      return false;
+    }
+
+    $this->constantsUsed[] = $code;
+    return true; 
+  }
+
+  public function parseFunctionUsed() {
+
+    $code = $this->tokenizer->current()->getCode();
+
     if (in_array($code, $this->functionsUsed)) {
       return false;
     }
@@ -487,6 +499,7 @@ class FileParser {
     $this->functionsUsed[] = $code;
     return true; 
   }
+
 
   public function getClasses() {
     return $this->classes;

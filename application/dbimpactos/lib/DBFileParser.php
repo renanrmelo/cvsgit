@@ -3,9 +3,6 @@ require_once __DIR__ . '/FileParser.php';
 
 class DBFileParser extends FileParser {
   
-  private $aFuncoesUtilizadas = array();
-  private $aConstantesUtilizadas = array();
-
   public function __construct($pathFile, $pathProject = '/var/www/dbportal_prj/') {
 
     parent::__construct($pathFile, $pathProject);

@@ -19,6 +19,9 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
    */
   protected $index = 0;
 
+  const FIND_TOKEN_FORWARD = 1;
+  const FIND_TOKEN_BACKWARD = 2;
+
   /**
    * Constructs a Tokenizer object.
    *
@@ -86,7 +89,7 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
    * @param integer $offset The offset to start searching from. A negative offest searches back.
    * @return integer | boolean The index of the token that has been found or false.
    */
-  public function findToken($search, $offset = 0) {
+  public function findToken($search, $offset = 0, $direction = Tokenizer::FIND_TOKEN_FORWARD) {
 
     if (empty($search)) {
       throw new InvalidArgumentException('A token cannot be searched for with a null value.');
@@ -96,17 +99,10 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
       throw new InvalidArgumentException('On offset must be specified as an integer.');
     }
 
-    $reversed = false;
     $tokenizer = clone $this;
 
     if (is_scalar($search)) {
       $search = array($search);
-    }
-
-    if ($offset < 0) {
-
-      $reversed = true;
-      $offset = abs($offset);
     }
 
     $tokenizer->seek($offset);
@@ -127,7 +123,7 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
         return $tokenizer->key();
       }
 
-      if ($reversed) {
+      if ($direction === Tokenizer::FIND_TOKEN_BACKWARD) {
 
         $tokenizer->prev();
         continue;
