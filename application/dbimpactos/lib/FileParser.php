@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/Tokenizer.php';
+require_once __DIR__ . '/ParseData.php';
+require_once __DIR__ . '/ParseDataClass.php';
 
 /**
  * File Parser
@@ -29,8 +31,6 @@ class FileParser {
   protected $log = "";
   protected $currentClassName;
   protected $brackets;
-
-  const FILE_PATTERN = '/\b(?P<files>[\/\w-.]+\.php)\b/mi';
 
   public function __construct($pathFile, $pathProject = '/var/www/dbportal_prj/') {
 
@@ -165,7 +165,7 @@ class FileParser {
       return false;
     }
 
-    if ($this->tokenizer->offsetGet($index)->is($tokenStop)) {
+    if ($find !== $tokenStop && $this->tokenizer->offsetGet($index)->is($tokenStop)) {
       return false;
     }
 
@@ -190,7 +190,7 @@ class FileParser {
       return false;
     }
 
-    preg_match_all(FileParser::FILE_PATTERN, $string, $matches);
+    preg_match_all('/\b(?P<files>[\/\w-.]+\.php)\b/mi', $string, $matches);
     return $matches['files'];
   }
 
@@ -224,7 +224,7 @@ class FileParser {
       return false;
     }
 
-    $this->requires[] = array('line' => $line, 'file' => $requireFile); 
+    $this->requires[] = new ParseData($requireFile, $line); 
     return true;
   }
 
@@ -243,7 +243,7 @@ class FileParser {
       return false;
     } 
 
-    $this->declaring[] = array('line' => $token->getLine(), 'class' => $token->getCode());
+    $this->declaring[] = new ParseData($token->getCode(), $token->getLine());
     return true;
   }
 
@@ -258,7 +258,8 @@ class FileParser {
     $this->tokenizer->seek($index);
     $token = $this->tokenizer->offsetGet($index);
     $this->currentClassName = $token->getCode();
-    $this->classes[$this->currentClassName] = array('line' => $token->getLine(), 'method' => array(), 'constant' => array());
+
+    $this->classes[$this->currentClassName] = new ParseDataClass($this->currentClassName, $token->getLine());
   }
 
   public function parseFunction() {
@@ -278,11 +279,11 @@ class FileParser {
 
     if ( empty($this->currentClassName) ) {
 
-      $this->functions[] = array('line' => $token->getLine(), 'function' => $token->getCode());
+      $this->functions[] = new ParseData($token->getCode(), $token->getLine());
       return;
     }
 
-    $this->classes[$this->currentClassName]['method'][] = array('line' => $token->getLine(), 'function' => $token->getCode());
+    $this->classes[$this->currentClassName]->addMethod(new ParseData($token->getCode(), $token->getLine()));
   }
 
   public function parseConstant() {
@@ -298,11 +299,11 @@ class FileParser {
 
     if ( empty($this->currentClassName) ) {
 
-      $this->constants[] = array('line' => $token->getLine(), 'name' => $token->getCode());
+      $this->constants[] = new ParseData($token->getCode(), $token->getLine());
       return true;
     }
 
-    $this->classes[$this->currentClassName]['constant'][] = array('line' => $token->getLine(), 'name' => $token->getCode());
+    $this->classes[$this->currentClassName]->addConstant(new ParseData($token->getCode(), $token->getLine()));
     return true; 
   }
 
@@ -316,7 +317,8 @@ class FileParser {
 
     $this->tokenizer->seek($index);
     $token = $this->tokenizer->offsetGet($index);
-    $this->constants[] = array('line' => $token->getLine(), 'name' => $this->clearEncapsedString($token->getCode()));
+
+    $this->constants[] = new ParseData($this->clearEncapsedString($token->getCode()), $token->getLine());
     return true; 
   }
 
@@ -351,29 +353,27 @@ class FileParser {
         return false;
       }
 
-      $this->requires[] = array('line' => $line, 'file' => $requireFile);
+      $this->requires[] = new ParseData($requireFile, $line);
     }
 
   }
 
-  // @todo - verificar se é metodo ou constant    
+  // @todo - descobrir se metodo ou constant
   public function parseStatic() {
 
-    $token = $this->getNextToken();
+    $token = $this->tokenizer->current();
     $ignore = array('SELF', '__CLASS__', strtoupper($this->currentClassName));
+    $index = $this->findTokenForward(';');
+
+    if ($index) {
+      $this->tokenizer->seek($index);
+    }
 
     if (in_array(strtoupper($token->getCode()), $ignore)) {
       return false;
     }
 
-    /**
-     * Metodo statico 
-     */
-    if ($token->is(T_DOUBLE_COLON)) {
-      return false;
-    }
-
-    $this->declaring[] = array('line' => $token->getLine(), 'class' => $token->getCode());
+    $this->declaring[] = new ParseData($token->getCode(), $token->getLine());
     return true;
   }
 
@@ -414,7 +414,7 @@ class FileParser {
           return false;
         }
 
-        $this->requires[] = array('line' => $currentLine, 'file' => $requireFile);
+        $this->requires[] = new ParseData($requireFile, $currentLine);
       }
 
       $currentLine++;
@@ -444,10 +444,16 @@ class FileParser {
       return $this->parseFunctionUsed();
     }
 
+    /**
+     * try catch 
+     */
     if ($this->findTokenBackward(T_CATCH)) {
       return false;
     }
 
+    /**
+     * Method or property 
+     */
     if ($this->findTokenBackward(T_OBJECT_OPERATOR)) {
       return false;
     }
@@ -460,43 +466,20 @@ class FileParser {
 
   public function parseConstantUsed() {
 
-    $code = $this->tokenizer->current()->getCode();
+    $token = $this->tokenizer->current();
 
-    if ( $code == 'janela') {
-
-      print_r($this->getPrevToken(3));
-      print_r($this->getPrevToken(2));
-      print_r($this->getPrevToken());
-
-      print_r($this->tokenizer->current());
-
-      print_r($this->getNextToken());
-      print_r($this->getNextToken(2));
-      print_r($this->getNextToken(3));
-      exit;
-    }
-
-    if (in_array(strtoupper($code), array('FALSE', 'TRUE', 'NULL')) ) { 
+    if (in_array(strtoupper($token->getCode()), array('FALSE', 'TRUE', 'NULL')) ) { 
       return false;
     }
 
-    if (in_array($code, $this->constantsUsed)) {
-      return false;
-    }
-
-    $this->constantsUsed[] = $code;
+    $this->constantsUsed[] = new ParseData($token->getCode(), $token->getLine());
     return true; 
   }
 
   public function parseFunctionUsed() {
 
-    $code = $this->tokenizer->current()->getCode();
-
-    if (in_array($code, $this->functionsUsed)) {
-      return false;
-    }
-
-    $this->functionsUsed[] = $code;
+    $token = $this->tokenizer->current();
+    $this->functionsUsed[] = new ParseData($token->getCode(), $token->getLine()); 
     return true; 
   }
 
