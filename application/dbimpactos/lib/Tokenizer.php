@@ -86,8 +86,9 @@ class Tokenizer implements SeekableIterator, Countable, ArrayAccess, Serializabl
    * Find a token in the tokenizer.
    *
    * @param mixed $search
-   * @param integer $offset The offset to start searching from. A negative offest searches back.
-   * @return integer | boolean The index of the token that has been found or false.
+   * @param integer $offset The offset to start searching from. 
+   * @param integer $direction Direction to find forward or backward. 
+   * @return integer | boolean 
    */
   public function findToken($search, $offset = 0, $direction = Tokenizer::FIND_TOKEN_FORWARD) {
 

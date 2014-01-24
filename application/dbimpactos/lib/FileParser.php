@@ -13,16 +13,17 @@ require_once __DIR__ . '/ParseDataClass.php';
  */
 class FileParser {
 
-  protected $code;
   protected $tokenizer;
   protected $pathFile;
   protected $pathRequire;
+
+  protected $lines = array();
   protected $totalLines = 0;
 
   protected $classes = array();
   protected $functions = array();
   protected $requires = array();
-  protected $declaring = array();
+  protected $classesUsed = array(); // @todo - guardar metodos igual $classes
   protected $constants = array();
 
   protected $constantsUsed = array();
@@ -30,34 +31,43 @@ class FileParser {
 
   protected $log = "";
   protected $currentClassName;
-  protected $brackets;
+  protected $braces;
 
-  public function __construct($pathFile, $pathProject = '/var/www/dbportal_prj/') {
+  public function __construct($pathFile, $pathProject = null) {
 
     if ( !file_exists($pathFile) ) {
       throw new Exception("File {$pathFile} not exists.");
     }
 
     $this->pathFile = $pathFile;
-    $this->pathRequire = dirname($pathFile) . '/';
-    $this->pathProject = $pathProject;
+    $this->pathRequire = dirname($pathFile) . DIRECTORY_SEPARATOR;
+
+    if (empty($pathProject)) {
+      $pathProject = $this->pathRequire;
+    }
+
+    $this->pathProject = trim($pathProject, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
     $file = fopen($pathFile, "r"); 
+    $code = '';
 
     while ( !feof($file) ) { 
 
-      $this->code .= fgets($file, 4096); 
+      $line = fgets($file, 4096);  
+      $code .= $line; 
       $this->totalLines++;
+      $this->lines[$this->totalLines] = $line;
     } 
 
     fclose($file); 
 
-    if ( empty($this->code) ) {
+    if ( empty($code) ) {
       throw new Exception("File {$pathFile} is empty.");
     }
 
-    $this->tokenizer = new Tokenizer($this->code);
+    $this->tokenizer = new Tokenizer($code);
     $this->parse();
+    $code = null;
   }
 
   public function parse() {
@@ -67,49 +77,55 @@ class FileParser {
 
     while ($tokenizer->valid()) {
 
+      if($tokenizer->current()->isOpeningBrace()) {
+
+        $this->braces++;
+        $this->tokenizer->next();
+        continue;
+      }
+      
+      if ($tokenizer->current()->isClosingBrace()) {
+
+        $this->braces--;
+        $this->tokenizer->next();
+        continue;
+      }
+
       switch ($tokenizer->current()->getValue()) {
 
-        case $tokenizer->current()->isOpeningBrace() :
-          $this->brackets++;
-        break;
-
-        case $tokenizer->current()->isClosingBrace() :
-          $this->brackets--;
-        break;
-          
-        case T_REQUIRE:
-        case T_INCLUDE: 
-        case T_REQUIRE_ONCE:
-        case T_INCLUDE_ONCE:
+        case T_REQUIRE :
+        case T_INCLUDE : 
+        case T_REQUIRE_ONCE :
+        case T_INCLUDE_ONCE :
           $this->parseRequire();
         break;
 
         case T_NEW :
-          $this->parseDeclaring();
+          $this->parseClassesUsed();
         break;
           
         case T_CLASS :
           $this->parseClass();
         break;
 
-        case T_FUNCTION:
+        case T_FUNCTION :
           $this->parseFunction();
         break;
         
-        case T_CONST:
+        case T_CONST :
           $this->parseConstant();
         break;
         
-        case T_CONSTANT_ENCAPSED_STRING:
-        case T_ENCAPSED_AND_WHITESPACE:
+        case T_CONSTANT_ENCAPSED_STRING :
+        case T_ENCAPSED_AND_WHITESPACE :
           $this->parseEncapsedString();
         break;
         
-        case T_INLINE_HTML:
+        case T_INLINE_HTML :
           $this->parseHTML();
         break;
         
-        case T_STRING:
+        case T_STRING :
           $this->parseString();
         break;
       }
@@ -122,7 +138,7 @@ class FileParser {
   public function rewind() {
 
     $this->tokenizer->rewind();
-    $this->brackets = 0;
+    $this->braces = 0;
   }
 
   public function getNextToken($indexSeek = 1) {
@@ -137,7 +153,7 @@ class FileParser {
     return $tokenizer->current();
   }
 
-  public function getPrevToken($indexSeek = 1) {
+  public function getPreviousToken($indexSeek = 1) {
 
     $tokenizer = clone $this->tokenizer;
     $tokenizer->seek($tokenizer->key() - $indexSeek);
@@ -228,7 +244,7 @@ class FileParser {
     return true;
   }
 
-  public function parseDeclaring() {
+  public function parseClassesUsed() {
 
     $index = $this->findTokenForward(T_STRING);
 
@@ -243,7 +259,7 @@ class FileParser {
       return false;
     } 
 
-    $this->declaring[] = new ParseData($token->getCode(), $token->getLine());
+    $this->classesUsed[] = new ParseData($token->getCode(), $token->getLine());
     return true;
   }
 
@@ -256,10 +272,15 @@ class FileParser {
     }
 
     $this->tokenizer->seek($index);
-    $token = $this->tokenizer->offsetGet($index);
-    $this->currentClassName = $token->getCode();
 
-    $this->classes[$this->currentClassName] = new ParseDataClass($this->currentClassName, $token->getLine());
+    $token     = $this->tokenizer->offsetGet($index);
+    $startLine = $token->getLine();
+    $endLine   = $this->parseEndLine($startLine);
+    $class     = $token->getCode();
+
+    $this->currentClassName = $class;
+    $this->classes[$class] = new ParseDataClass($class, $startLine, $endLine);
+    return true;
   }
 
   public function parseFunction() {
@@ -271,19 +292,24 @@ class FileParser {
     }
 
     $this->tokenizer->seek($index);
-    $token = $this->tokenizer->offsetGet($index);
 
-    if ( $this->brackets === 0 ) {
+    $token     = $this->tokenizer->offsetGet($index);
+    $startLine = $token->getLine();
+    $endLine   = $this->parseEndLine($startLine);
+    $function  = $token->getCode();
+
+    if ($this->braces === 0) {
       $this->currentClassName = null;
     }
-
+    
     if ( empty($this->currentClassName) ) {
 
-      $this->functions[] = new ParseData($token->getCode(), $token->getLine());
-      return;
+      $this->functions[] = new ParseData($function, $startLine, $endLine);
+      return true;
     }
 
-    $this->classes[$this->currentClassName]->addMethod(new ParseData($token->getCode(), $token->getLine()));
+    $this->classes[$this->currentClassName]->addMethod(new ParseData($function, $startLine, $endLine));
+    return true;
   }
 
   public function parseConstant() {
@@ -373,7 +399,7 @@ class FileParser {
       return false;
     }
 
-    $this->declaring[] = new ParseData($token->getCode(), $token->getLine());
+    $this->classesUsed[] = new ParseData($token->getCode(), $token->getLine());
     return true;
   }
 
@@ -483,6 +509,103 @@ class FileParser {
     return true; 
   }
 
+  public function parseBraces() {
+
+  }
+
+  public function parseEndLine($startLine) {
+
+    $braces = 0;
+    $foundStart = false;
+
+    for ($line = $startLine; $line < $this->totalLines; $line++) {
+
+      $code = $this->lines[$line];
+      $openBracesFound = mb_substr_count($code, '{');
+      $closeBracesFound = mb_substr_count($code, '}');
+
+      if ($openBracesFound > 0) {
+
+        $foundStart = true;
+        $braces += $openBracesFound; 
+      }
+
+      if ($closeBracesFound > 0) {
+        $braces -= $closeBracesFound; 
+      }
+
+      if ($braces <= 0 && $foundStart) {
+        return $line;
+      }
+    }
+
+    return $startLine;
+  }
+
+  /**
+   * Returns all data where the line is between
+   *
+   * @todo - criar classe para guardar lista dos parses, algo tipo ParseDataList extends ParseData
+   *
+   * @param integer $line
+   * @access public
+   * @return ParseData[]
+   */
+  public function getDataLine($line) {
+
+    $dataRange = array();
+
+    if ($line > $this->getTotalLines()) {
+      return $dataRange;
+    }
+
+    $find = array(
+      'classes' => $this->classes, 
+      'functions' => $this->functions, 
+      'classesUsed' => $this->classesUsed,
+      'constants' => $this->constants,
+      'constantsUsed' => $this->constantsUsed,
+      'functionsUsed' => $this->functionsUsed
+    );
+
+    foreach ($find as $name => $dataFind ) {
+
+      foreach ($dataFind as $data) {
+
+        if ($name == 'classes') {
+
+          /**
+           * Line is not between start and end class 
+           */
+          if ($line < $data->getStartLine() || $line > $data->getEndLine()) {
+            continue;
+          }
+
+          /**
+           * New instance to save only methods that are in the range
+           */
+          $dataClass = new ParseDataClass($data->getValue(), $data->getStartLine(), $data->getEndLine());
+
+          foreach($data->getMethods() as $method) {
+
+            if ($line >= $method->getStartLine() && $line <= $method->getEndLine()) {
+              $dataClass->addMethod($method);
+            }
+          }
+
+          $dataRange[$name][] = $dataClass;
+          continue;
+        }
+
+        if ($line >= $data->getStartLine() && $line <= $data->getEndLine()) {
+          $dataRange[$name][] = $data;
+        }
+
+      }
+    }
+
+    return $dataRange;
+  }
 
   public function getClasses() {
     return $this->classes;
@@ -496,8 +619,8 @@ class FileParser {
     return $this->requires;
   }
 
-  public function getDeclaring() {
-    return $this->declaring;
+  public function getClassesUsed() {
+    return $this->classesUsed;
   }
 
   public function getConstants() {
@@ -524,21 +647,23 @@ class FileParser {
 
 // $file = new FileParser('/var/www/dbportal_prj/model/dataManager.php');
 // $file = new FileParser('/var/www/dbportal_prj/pes2_cadferiasmes001.php');
-$file = new FileParser('/var/www/dbportal_prj/libs/db_stdlib.php');
+// $file = new FileParser('/var/www/dbportal_prj/libs/db_stdlib.php');
  
-echo "\ncontants: \n";
-print_r($file->getConstants());
-echo "\nclasses: \n";
-print_r($file->getClasses());
-echo "\nfunctions: \n";
-print_r($file->getFunctions());
-echo "\nrequires: \n";
-print_r($file->getRequires());
-echo "\ndeclaring: \n";
-print_r($file->getDeclaring());
-echo "\nfunction used: \n";
-print_r($file->getFunctionsUsed());
-echo "\nconstants used: \n";
-print_r($file->getConstantsUsed());
-echo "\nlog: \n";
-print_r($file->getLog());
+// echo "\ncontants: \n";
+// print_r($file->getConstants());
+// echo "\nclasses: \n";
+// print_r($file->getClasses());
+// echo "\nfunctions: \n";
+// print_r($file->getFunctions());
+// echo "\nrequires: \n";
+// print_r($file->getRequires());
+// echo "\nclasses used: \n";
+// print_r($file->getClassesUsed());
+// echo "\nfunction used: \n";
+// print_r($file->getFunctionsUsed());
+// echo "\nconstants used: \n";
+// print_r($file->getConstantsUsed());
+// echo "\nlog: \n";
+// print_r($file->getLog());
+// echo "\n\nrange:\n";
+// print_r($file->getDataLine(38));

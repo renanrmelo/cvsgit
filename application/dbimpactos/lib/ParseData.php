@@ -3,20 +3,30 @@
 class ParseData {
 
   private $value;
-  private $line;
+  private $startLine;
+  private $endLine;
 
-  public function __construct($value, $line) {
+  public function __construct($value, $startLine = 0, $endLine = 0) {
 
     $this->value = $value;
-    $this->line = $line;
+    $this->startLine = $startLine;
+    $this->endLine = $endLine;
+
+    if (empty($endLine)) {
+      $this->endLine = $startLine;
+    }
   }
 
   public function getValue() {
     return $this->value;
   }
   
-  public function getLine() {
-    return $this->line;
+  public function getStartLine() {
+    return $this->startLine;
+  }
+
+  public function getEndLine() {
+    return $this->endLine;
   }
 
 }

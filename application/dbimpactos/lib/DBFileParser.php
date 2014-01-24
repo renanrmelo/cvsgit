@@ -18,13 +18,10 @@ class DBFileParser extends FileParser {
 
       $oToken = $tokenizer->current();
 
-      if ($oToken->getValue() === T_STRING) {
+      if ($oToken->is(T_STRING) && $oToken->is('db_utils')) {
 
-        if ( $oToken->getCode() === 'db_utils' ) {
-
-          $this->processarGetDao();
-          continue;
-        }
+        $this->processarGetDao();
+        continue;
       }
 
       $tokenizer->next();
@@ -40,29 +37,18 @@ class DBFileParser extends FileParser {
       return false;
     }
 
-    $oToken = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
+    $iIndex = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
     
-    if (!$oToken) {
+    if (!$iIndex) {
       return false;
     }
 
+    $this->tokenizer->seek($iIndex);
+    $oToken = $this->tokenizer->offsetGet($iIndex);
     $sClasse = 'cl_' . $this->clearEncapsedString($oToken->getCode());
 
-    $this->declaring[] = array('line' => $oToken->getLine(), 'class' => $sClasse);
+    $this->declaring[] = new ParseData($sClasse, $oToken->getLine());
     return true;
   }
 
 }
-
-
-//$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/model/dataManager.php');
-//$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/pes2_emissao_pdf002.php');
-//$Tokenizer = new DBTokenizer('/var/www/dbportal_prj/scripts/classes/DBViewEncerramentoAvaliacoesFiltro.classe.js');
-
-//print_r($Tokenizer->getDebugTokens());
-//print_r($Tokenizer->getConstants());
-//print_r($Tokenizer->getClasses());
-// print_r($Tokenizer->getFunctions());
-// print_r($Tokenizer->getRequires());
-// print_r($Tokenizer->getDeclaring());
-// print_r($Tokenizer->getLog());
