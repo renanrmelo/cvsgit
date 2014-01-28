@@ -19,9 +19,7 @@ class DBFileParser extends FileParser {
       $oToken = $tokenizer->current();
 
       if ($oToken->is(T_STRING) && $oToken->is('db_utils')) {
-
         $this->processarGetDao();
-        continue;
       }
 
       $tokenizer->next();
@@ -31,9 +29,9 @@ class DBFileParser extends FileParser {
 
   public function processarGetDao() {
     
-    $oProximoToken = $this->findTokenForward(T_STRING);
+    $iProximoToken = $this->findTokenForward(T_STRING);
 
-    if (!$oProximoToken || $oProximoToken->getCode() !== 'getDao') {
+    if (!$iProximoToken || $this->tokenizer->offsetGet($iProximoToken)->getCode() !== 'getDao') {
       return false;
     }
 
@@ -52,3 +50,26 @@ class DBFileParser extends FileParser {
   }
 
 }
+
+// $file = new FileParser('/var/www/dbportal_prj/model/dataManager.php');
+// $file = new FileParser('/var/www/dbportal_prj/pes2_cadferiasmes001.php');
+$file = new DBFileParser('/var/www/dbportal_prj/libs/db_stdlib.php');
+ 
+// echo "\ncontants: \n";
+// print_r($file->getConstants());
+// echo "\nclasses: \n";
+// print_r($file->getClasses());
+// echo "\nfunctions: \n";
+// print_r($file->getFunctions());
+// echo "\nrequires: \n";
+// print_r($file->getRequires());
+echo "\nclasses used: \n";
+print_r($file->getClassesUsed());
+echo "\nfunction used: \n";
+print_r($file->getFunctionsUsed());
+echo "\nconstants used: \n";
+print_r($file->getConstantsUsed());
+echo "\nlog: \n";
+print_r($file->getLog());
+// echo "\n\nrange 50:\n";
+// print_r($file->getDataLine(50));

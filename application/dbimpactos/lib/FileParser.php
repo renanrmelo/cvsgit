@@ -35,7 +35,7 @@ class FileParser {
 
   public function __construct($pathFile, $pathProject = null) {
 
-    if ( !file_exists($pathFile) ) {
+    if (!file_exists($pathFile)) {
       throw new Exception("File {$pathFile} not exists.");
     }
 
@@ -46,12 +46,12 @@ class FileParser {
       $pathProject = $this->pathRequire;
     }
 
-    $this->pathProject = trim($pathProject, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $this->pathProject = rtrim($pathProject, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
     $file = fopen($pathFile, "r"); 
     $code = '';
 
-    while ( !feof($file) ) { 
+    while (!feof($file)) { 
 
       $line = fgets($file, 4096);  
       $code .= $line; 
@@ -644,26 +644,3 @@ class FileParser {
   }
 
 }
-
-// $file = new FileParser('/var/www/dbportal_prj/model/dataManager.php');
-// $file = new FileParser('/var/www/dbportal_prj/pes2_cadferiasmes001.php');
-// $file = new FileParser('/var/www/dbportal_prj/libs/db_stdlib.php');
- 
-// echo "\ncontants: \n";
-// print_r($file->getConstants());
-// echo "\nclasses: \n";
-// print_r($file->getClasses());
-// echo "\nfunctions: \n";
-// print_r($file->getFunctions());
-// echo "\nrequires: \n";
-// print_r($file->getRequires());
-// echo "\nclasses used: \n";
-// print_r($file->getClassesUsed());
-// echo "\nfunction used: \n";
-// print_r($file->getFunctionsUsed());
-// echo "\nconstants used: \n";
-// print_r($file->getConstantsUsed());
-// echo "\nlog: \n";
-// print_r($file->getLog());
-// echo "\n\nrange:\n";
-// print_r($file->getDataLine(38));
