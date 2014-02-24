@@ -15,7 +15,6 @@ class FileParser {
 
   protected $tokenizer;
   protected $pathFile;
-  protected $pathRequire;
 
   protected $lines = array();
   protected $totalLines = 0;
@@ -23,30 +22,26 @@ class FileParser {
   protected $classes = array();
   protected $functions = array();
   protected $requires = array();
-  protected $classesUsed = array(); // @todo - guardar metodos igual $classes
   protected $constants = array();
 
+  protected $classesUsed = array(); // @todo - guardar metodos igual $classes
   protected $constantsUsed = array();
   protected $functionsUsed = array();
 
-  protected $log = "";
-  protected $currentClassName;
-  protected $braces;
+  protected $internalFunctionsUsed = array();
+  protected $internalConstantsUsed = array();
 
-  public function __construct($pathFile, $pathProject = null) {
+  protected $externalClassesUsed = array(); // @todo - guardar metodos igual $classes
+  protected $externalConstantsUsed = array();
+  protected $externalFunctionsUsed = array();
+  
+  public function __construct($pathFile) {
 
     if (!file_exists($pathFile)) {
       throw new Exception("File {$pathFile} not exists.");
     }
 
     $this->pathFile = $pathFile;
-    $this->pathRequire = dirname($pathFile) . DIRECTORY_SEPARATOR;
-
-    if (empty($pathProject)) {
-      $pathProject = $this->pathRequire;
-    }
-
-    $this->pathProject = rtrim($pathProject, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
     $file = fopen($pathFile, "r"); 
     $code = '';
@@ -66,30 +61,18 @@ class FileParser {
     }
 
     $this->tokenizer = new Tokenizer($code);
-    $this->parse();
     $code = null;
+
+    $this->parse();
+    $this->parseExternalInternalUsed();
   }
 
   public function parse() {
 
     $tokenizer = $this->tokenizer;
-    $this->rewind();
+    $this->tokenizer->rewind();
 
     while ($tokenizer->valid()) {
-
-      if($tokenizer->current()->isOpeningBrace()) {
-
-        $this->braces++;
-        $this->tokenizer->next();
-        continue;
-      }
-      
-      if ($tokenizer->current()->isClosingBrace()) {
-
-        $this->braces--;
-        $this->tokenizer->next();
-        continue;
-      }
 
       switch ($tokenizer->current()->getValue()) {
 
@@ -111,18 +94,23 @@ class FileParser {
         case T_FUNCTION :
           $this->parseFunction();
         break;
+
+        case T_EMPTY :
+        case T_ARRAY :
+        case T_EVAL  :
+        case T_EXIT  :
+        case T_ISSET :
+        case T_LIST  :
+        case T_PRINT :
+        case T_UNSET :
+          $this->internalFunctionsUsed[] = new ParseData(
+            $this->tokenizer->current()->getCode(), 
+            $this->tokenizer->current()->getLine()
+          ); 
+        break;
         
         case T_CONST :
           $this->parseConstant();
-        break;
-        
-        case T_CONSTANT_ENCAPSED_STRING :
-        case T_ENCAPSED_AND_WHITESPACE :
-          $this->parseEncapsedString();
-        break;
-        
-        case T_INLINE_HTML :
-          $this->parseHTML();
         break;
         
         case T_STRING :
@@ -133,12 +121,6 @@ class FileParser {
       $tokenizer->next();
     }
     
-  }
-
-  public function rewind() {
-
-    $this->tokenizer->rewind();
-    $this->braces = 0;
   }
 
   public function getNextToken($indexSeek = 1) {
@@ -200,16 +182,6 @@ class FileParser {
     return str_replace(array('"', "'"), '', $string);
   }
 
-  public function getFileName($string) {
-
-    if ( strpos($string, '.php') === false ) {
-      return false;
-    }
-
-    preg_match_all('/\b(?P<files>[\/\w-.]+\.php)\b/mi', $string, $matches);
-    return $matches['files'];
-  }
-
   public function parseRequire() {
 
     $index = $this->findTokenForward(array(T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE));
@@ -222,25 +194,8 @@ class FileParser {
     $token = $this->tokenizer->offsetGet($index);
     $line = $token->getLine();
     $require = $this->clearEncapsedString($token->getCode());
-    $requireFile = $this->pathRequire . $require; 
 
-    if ( !file_exists($requireFile) ) {
-      $requireFile = $this->pathProject . $require; 
-    } 
-
-    $requireFile = realpath($requireFile);
-
-    if ( empty($requireFile) ) {
-
-      $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-      $this->log .= " FileParser::parseRequire(): " . $this->pathFile . " : " . $line;
-      $this->log .= "\n - Arquivo de require não encontrado: ";
-      $this->log .= "\n " . $this->pathRequire . $require ."  || " . $this->pathProject . $require;
-      $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-      return false;
-    }
-
-    $this->requires[] = new ParseData($requireFile, $line); 
+    $this->requires[] = new ParseData($require, $line); 
     return true;
   }
 
@@ -255,7 +210,7 @@ class FileParser {
     $this->tokenizer->seek($index);
     $token = $this->tokenizer->offsetGet($index);
 
-    if (in_array(strtolower($token->getCode()), array('stdclass', 'exception'))) {
+    if (in_array(strtoupper($token->getCode()), array('STDCLASS', 'EXCEPTION'))) {
       return false;
     } 
 
@@ -278,9 +233,27 @@ class FileParser {
     $endLine   = $this->parseEndLine($startLine);
     $class     = $token->getCode();
 
-    $this->currentClassName = $class;
     $this->classes[$class] = new ParseDataClass($class, $startLine, $endLine);
     return true;
+  }
+
+  public function getClassRange($startLine, $endLine = 0) {
+
+    foreach ($this->classes as $classData) {
+
+      if ($classData->getStartLine() > $startLine || $classData->getEndLine() < $startLine) {
+        continue;
+      }
+
+      if ( !empty($endLine) ) {
+
+        if ($classData->getStartLine() > $endLine || $classData->getEndLine() < $endLine) {
+          continue;
+        }
+      }
+
+      return $classData->getValue();
+    }
   }
 
   public function parseFunction() {
@@ -293,22 +266,20 @@ class FileParser {
 
     $this->tokenizer->seek($index);
 
-    $token     = $this->tokenizer->offsetGet($index);
-    $startLine = $token->getLine();
-    $endLine   = $this->parseEndLine($startLine);
-    $function  = $token->getCode();
+    $token        = $this->tokenizer->offsetGet($index);
+    $startLine    = $token->getLine();
+    $endLine      = $this->parseEndLine($startLine);
+    $function     = $token->getCode();
+    $className    = $this->getClassRange($startLine, $endLine);
+    $functionData = new ParseData($function, $startLine, $endLine);
 
-    if ($this->braces === 0) {
-      $this->currentClassName = null;
-    }
-    
-    if ( empty($this->currentClassName) ) {
+    if ( !empty($className) ) {
 
-      $this->functions[] = new ParseData($function, $startLine, $endLine);
+      $this->classes[$className]->addMethod($functionData);
       return true;
     }
 
-    $this->classes[$this->currentClassName]->addMethod(new ParseData($function, $startLine, $endLine));
+    $this->functions[] = $functionData;
     return true;
   }
 
@@ -321,15 +292,20 @@ class FileParser {
     }
 
     $this->tokenizer->seek($index);
-    $token = $this->tokenizer->offsetGet($index);
 
-    if ( empty($this->currentClassName) ) {
+    $token        = $this->tokenizer->offsetGet($index);
+    $startLine    = $token->getLine();
+    $constant     = $token->getCode();
+    $constantData = new ParseData($constant, $startLine);
+    $className    = $this->getClassRange($startLine);
 
-      $this->constants[] = new ParseData($token->getCode(), $token->getLine());
+    if ( !empty($className) ) {
+
+      $this->classes[$className]->addConstant($constantData);
       return true;
     }
 
-    $this->classes[$this->currentClassName]->addConstant(new ParseData($token->getCode(), $token->getLine()));
+    $this->constants[] = $constantData;
     return true; 
   }
 
@@ -348,103 +324,22 @@ class FileParser {
     return true; 
   }
 
-  public function parseEncapsedString() {
-
-    $token = $this->tokenizer->current();
-    $string = $token->getCode();
-    $line = $token->getLine();
-    $files = $this->getFileName($string);
-
-    if ( empty($files) ) {
-      return false;
-    }
-
-    foreach ( $files as $require ) {
-
-      $requireFile = $this->pathRequire . $require; 
-
-      if ( !file_exists($requireFile) ) {
-        $requireFile = $this->pathProject . $require; 
-      } 
-
-      $requireFile = realpath($requireFile);
-
-      if ( empty($requireFile) ) {
-
-        $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-        $this->log .= " FileParser::parseEncapsedString(): " .$this->pathFile . " : " . $line;
-        $this->log .= "\n - Arquivo de require não encontrado : ";
-        $this->log .= "\n " . $this->pathRequire . $require ."  || " . $this->pathProject . $require;
-        $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-        return false;
-      }
-
-      $this->requires[] = new ParseData($requireFile, $line);
-    }
-
-  }
-
-  // @todo - descobrir se metodo ou constant
+  // @todo - descobrir se metodo, propriedade ou constant
   public function parseStatic() {
 
     $token = $this->tokenizer->current();
-    $ignore = array('SELF', '__CLASS__', strtoupper($this->currentClassName));
     $index = $this->findTokenForward(';');
 
     if ($index) {
       $this->tokenizer->seek($index);
     }
 
-    if (in_array(strtoupper($token->getCode()), $ignore)) {
+    if (in_array(strtoupper($token->getCode()), array('SELF', '__CLASS__'))) {
       return false;
     }
 
     $this->classesUsed[] = new ParseData($token->getCode(), $token->getLine());
     return true;
-  }
-
-  public function parseHTML() {
-
-    $token = $this->tokenizer->current();
-    $string = $token->getCode();
-    $lines = explode("\n", $token->getCode());
-    $currentLine = $token->getLine();
-
-    foreach ($lines as $contentLine) {
-
-      $files = $this->getFileName($contentLine);
-
-      if ( empty($files) ) {
-
-        $currentLine++;
-        continue;
-      }
-
-      foreach ( $files as $require ) {
-
-        $requireFile = $this->pathRequire . $require; 
-
-        if ( !file_exists($requireFile) ) {
-          $requireFile = $this->pathProject . $require; 
-        } 
-
-        $requireFile = realpath($requireFile);
-
-        if ( empty($requireFile) ) {
-
-          $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-          $this->log .= " - Arquivo de require não encontrado: " . $this->pathFile . " :" . $require;
-          $this->log .= "\n   FileParser::parseHTML(): ";
-          $this->log .= "\n   " . $this->pathRequire . $require ."  || " . $this->pathProject . $require;
-          $this->log .= "\n ----------------------------------------------------------------------------------------------------\n";
-          return false;
-        }
-
-        $this->requires[] = new ParseData($requireFile, $currentLine);
-      }
-
-      $currentLine++;
-    } 
   }
 
   public function parseString() {
@@ -464,6 +359,13 @@ class FileParser {
     }
       
     /**
+     * Method or property 
+     */
+    if ($this->findTokenBackward(T_OBJECT_OPERATOR)) {
+      return false;
+    }
+
+    /**
      * Function
      */
     if ($this->getNextToken()->is('(')) {
@@ -474,13 +376,6 @@ class FileParser {
      * try catch 
      */
     if ($this->findTokenBackward(T_CATCH)) {
-      return false;
-    }
-
-    /**
-     * Method or property 
-     */
-    if ($this->findTokenBackward(T_OBJECT_OPERATOR)) {
       return false;
     }
 
@@ -507,10 +402,6 @@ class FileParser {
     $token = $this->tokenizer->current();
     $this->functionsUsed[] = new ParseData($token->getCode(), $token->getLine()); 
     return true; 
-  }
-
-  public function parseBraces() {
-
   }
 
   public function parseEndLine($startLine) {
@@ -545,7 +436,7 @@ class FileParser {
   /**
    * Returns all data where the line is between
    *
-   * @todo - criar classe para guardar lista dos parses, algo tipo ParseDataList extends ParseData
+   * @todo - criar classe para guardar lista dos parses, ParseDataList extends ParseData
    *
    * @param integer $line
    * @access public
@@ -560,10 +451,10 @@ class FileParser {
     }
 
     $find = array(
-      'classes' => $this->classes, 
-      'functions' => $this->functions, 
-      'classesUsed' => $this->classesUsed,
-      'constants' => $this->constants,
+      'classes'       => $this->classes,
+      'functions'     => $this->functions,
+      'classesUsed'   => $this->classesUsed,
+      'constants'     => $this->constants,
       'constantsUsed' => $this->constantsUsed,
       'functionsUsed' => $this->functionsUsed
     );
@@ -607,6 +498,82 @@ class FileParser {
     return $dataRange;
   }
 
+  function parseExternalInternalUsed() {
+
+    foreach ($this->classesUsed as $classData) {
+    
+      if (!in_array($classData->getValue(), array_keys($this->classes))) {
+        $this->externalClassesUsed[] = $classData;
+      }
+    }
+
+    $definedConstants = get_defined_constants(true);
+    $internalConstants = array();
+
+    foreach ($definedConstants as $category => $constants) {
+
+      if ($category == 'user') {
+        continue;
+      }
+
+      foreach ($constants as $constantName => $constantValue) {
+        $internalConstants[] = $constantName;
+      }
+    }
+
+    foreach ($this->constantsUsed as $constantData) {
+
+      if (in_array($constantData->getValue(), $internalConstants)) {
+
+        $this->internalConstantsUsed[] = $constantData;
+        continue;
+      }
+    
+      if (!in_array($constantData->getValue(), array_keys($this->constants))) {
+        $this->externalConstantsUsed[] = $constantData;
+      }
+    }
+
+    $definedFunctions = get_defined_functions();
+    $internalFunctions = array_map('strtolower', $definedFunctions['internal']);
+
+    foreach ($this->functionsUsed as $functionUsedData) {
+    
+      if (in_array(strtolower($functionUsedData->getValue()), $internalFunctions)) {
+
+        $this->internalFunctionsUsed[] = $functionUsedData;
+        continue;
+      }
+
+      $found = false;
+
+      foreach ($this->functions as $functionData) {
+
+        if (strtoupper($functionUsedData->getValue()) == strtoupper($functionData->getValue())) {
+          $found = true;
+        }
+      }
+
+      if (!$found) {
+        $this->externalFunctionsUsed[] = $functionUsedData;
+      }
+    }
+  }
+
+  public function getFunctionsArguments() {
+
+    $content = file_get_contents($this->pathFile);
+
+    preg_match_all("/(function )(\S*\(\S*\))/", $content, $matches);
+
+    foreach($matches[2] as $match) {
+      $function[] = trim($match);
+    }
+
+    natcasesort($function);
+    return $function;
+  }
+
   public function getClasses() {
     return $this->classes;
   }
@@ -623,6 +590,10 @@ class FileParser {
     return $this->classesUsed;
   }
 
+  public function getExternalClassesUsed() {
+    return $this->externalClassesUsed;
+  }
+
   public function getConstants() {
     return $this->constants;
   }
@@ -631,12 +602,24 @@ class FileParser {
     return $this->constantsUsed;
   }
 
+  public function getExternalConstantsUsed() {
+    return $this->externalConstantsUsed;
+  }
+
+  public function getInternalConstantsUsed() {
+    return $this->internalConstantsUsed;
+  }
+
   public function getFunctionsUsed() {
     return $this->functionsUsed;
   }
+  
+  public function getExternalFunctionsUsed() {
+    return $this->externalFunctionsUsed;
+  }
 
-  public function getLog() {
-    return $this->log;
+  public function getInternalFunctionsUsed() {
+    return $this->internalFunctionsUsed;
   }
 
   public function getTotalLines() {
