@@ -110,7 +110,7 @@ class AddCommand extends Command {
            * Tag do commit 
            */
           case 'tag' :
-            $oArquivo->setTagMensagem(ltrim( strtoupper($this->oInput->getOption('tag')), 'T' ));
+            $oArquivo->setTagMensagem($this->oInput->getOption('tag'));
           break;
 
           /**
@@ -118,7 +118,7 @@ class AddCommand extends Command {
            */
           case 'tag-commit' :
 
-            $iTag = ltrim( strtoupper($this->oInput->getOption('tag-commit')), 'T' );
+            $iTag = $this->oInput->getOption('tag-commit');
             $oArquivo->setTagMensagem($iTag);
             $oArquivo->setTagArquivo($iTag);
             $oArquivo->setComando(Arquivo::COMANDO_COMMITAR_TAGGEAR);

@@ -298,11 +298,21 @@ class PushCommand extends Command {
       }
     }
 
-    $sArquivoCommit = $this->getApplication()->clearPath($oCommit->getArquivo());
-    
     if ( empty($iTag) ) {
       return;
     }
+
+    $oPrefixosTag = $this->getApplication()->getConfig('tag')->prefixo;
+    $sProjeto = $this->getApplication()->getModel()->getProjeto()->name; 
+
+    /**
+     * Prefixo das tag do prejeto
+     */
+    if (isset($oPrefixosTag->$sProjeto)) {
+      $iTag = $oPrefixosTag->$sProjeto . $iTag;
+    }
+
+    $sArquivoCommit = $this->getApplication()->clearPath($oCommit->getArquivo());
 
     /**
      * Forçar se tag existir
@@ -313,7 +323,7 @@ class PushCommand extends Command {
       $sComandoTag = '-d';
     }
     
-    return Encode::toUTF8("cvs tag {$sComandoTag} T{$iTag} " . escapeshellarg($sArquivoCommit));
+    return Encode::toUTF8("cvs tag {$sComandoTag} {$iTag} " . escapeshellarg($sArquivoCommit));
   }
 
   private function addArquivo($oCommit) {

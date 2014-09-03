@@ -10,6 +10,11 @@ use Exception, String;
 class DiffCommand extends Command {
 
   /**
+   * @var OutputInterface
+   */
+  private $oInput;
+
+  /**
    * Configura comando
    *
    * @access public
@@ -21,9 +26,10 @@ class DiffCommand extends Command {
     $this->setDescription('Exibe diferenças entre versões do arquivo');
     $this->setHelp(
       'Exibe diferenças entre versões do arquivo' . PHP_EOL .
-      'Caso nenhuma versão for informada, compara versão local com ultima do repositorio'
+      'Caso nenhuma versão for informada, compara versão local com ultima do repositorio' . PHP_EOL . 
+      'Caso nenhum arquivo for informado, usa todos arquivos adicionados para commit'
     );
-    $this->addArgument('arquivo', InputArgument::REQUIRED, 'Arquivo para comparação');
+    $this->addArgument('arquivo', InputArgument::OPTIONAL, 'Arquivo para comparação');
     $this->addArgument('primeira_versao', InputArgument::OPTIONAL, 'Primeira versão para comparação');
     $this->addArgument('segunda_versao', InputArgument::OPTIONAL, 'Segunda versão para comparação');
   }
@@ -38,14 +44,41 @@ class DiffCommand extends Command {
    */
   public function execute($oInput, $oOutput) {
 
+    $this->oInput = $oInput;
     $sArquivo = $oInput->getArgument('arquivo');
+
+    if (empty($sArquivo)) {
+      return $this->buscarArquivosModificados();
+    }
+
+    return $this->processarArquivo($sArquivo);
+  }
+
+  private function buscarArquivosModificados() {
+
+    /**
+     * Model do comando 
+     */
+    $oArquivoModel = new ArquivoModel();
+
+    /**
+     * lista dos arquivos adicionados para commit 
+     */
+    $aArquivos = $oArquivoModel->getAdicionados(); 
+
+    foreach ($aArquivos as $oCommit) {
+      $this->processarArquivo($this->getApplication()->clearPath($oCommit->getArquivo()));
+    }
+  }
+
+  private function processarArquivo($sArquivo) {
 
     if ( !file_exists($sArquivo) ) {
       throw new Exception("Arquivo não existe: $sArquivo");
     }
 
-    $nPrimeiraVersao = $oInput->getArgument('primeira_versao');
-    $nSegundaVersao  = $oInput->getArgument('segunda_versao');
+    $nPrimeiraVersao = $this->oInput->getArgument('primeira_versao');
+    $nSegundaVersao  = $this->oInput->getArgument('segunda_versao');
 
     /**
      * Nenhuma versao informada para usar diff 
@@ -223,7 +256,17 @@ class DiffCommand extends Command {
       $aParametrosDiff[] = $sParametro;
     }
 
-    pcntl_exec($sBinario, $aParametrosDiff);
+    $pid = pcntl_fork();
+    switch ($pid) {
+
+      case 0 :
+        pcntl_exec($sBinario, $aParametrosDiff);
+      break;
+    
+      default :
+        pcntl_waitpid($pid, $status);
+      break;
+    }
   }
 
 }

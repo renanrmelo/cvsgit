@@ -72,7 +72,7 @@ class WhatChangedCommand extends Command {
       foreach ( $oDadosCommit->aArquivos as $oArquivo ) {
 
         $sArquivo = $this->getApplication()->clearPath($oArquivo->name);
-        $sTag     = "T" . $oArquivo->tag;
+        $sTag     = $oArquivo->tag;
         $sMensagem = $oArquivo->message;
 
         foreach($oParametros->aArquivos as $sParametroArquivo) {

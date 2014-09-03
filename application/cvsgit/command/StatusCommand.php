@@ -232,8 +232,8 @@ class StatusCommand extends Command {
     $aArquivos = $oArquivoModel->getAdicionados(); 
 
     foreach ($aArquivos as $oCommit) {
-        $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->getArquivo());
-      }
+      $aArquivosParaCommit[] = $this->getApplication()->clearPath($oCommit->getArquivo());
+    }
 
     /**
      * Pesquisa modificacoes no cvs apenas se:

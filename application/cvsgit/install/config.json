@@ -12,6 +12,14 @@
    * configuracoes das tags
    */ 
   "tag" : { 
+
+    /**
+     * Preixo da tag por projeto
+     * @var Object
+     */
+    "prefixo" : {
+      "dbportal_prj" : "T"
+    }, 
                                                              
     /**
      * tag padrao para usar em todos os commits 
