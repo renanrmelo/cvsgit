@@ -7,7 +7,7 @@ use Config, FileDataBase, Exception;
 
 class CVSApplication extends Application {
 
-  const VERSION = '1.0';
+  const VERSION = '1.1';
 
   private $oConfig;
   private $oModel;
@@ -53,6 +53,22 @@ class CVSApplication extends Application {
 
     return $oConfig->get($sConfig);
   }
+
+  /**
+   * @param array $output
+   * @param integer $code
+   * return void
+   */
+  public function execute($command) {
+
+    exec($command . ' 2> /tmp/cvsgit_last_error', $output, $code);
+
+    $lastError = $this->getLastError();
+    if (strpos(strtolower($lastError), 'unknown host') !== false) {
+      throw new \Exception($lastError);
+    }
+    return (object) array('code' => $code, 'output' => $output);
+  } 
 
   /**
    * Less

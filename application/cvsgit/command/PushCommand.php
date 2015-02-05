@@ -87,7 +87,7 @@ class PushCommand extends Command {
 
     $this->aMensagemErro = array();
     $oTabela = new Table();
-    $oTabela->setHeaders(array('Arquivo', 'Tag', 'Mensagem', 'Tipo'));
+    $oTabela->setHeaders(array('Arquivo', 'Tag Arquivo', 'Tag Mensagem', 'Mensagem', 'Tipo'));
     $aLinhas = array();
     $aComandos = array();
     $iErros  = 0;
@@ -98,7 +98,10 @@ class PushCommand extends Command {
     foreach ( $this->aArquivos as $oCommit ) {
 
         $sArquivo  = $this->getApplication()->clearPath($oCommit->getArquivo());
-        $iTag      = $oCommit->getTagArquivo();
+
+        $iTagMensagem = $oCommit->getTagMensagem(); 
+        $iTagArquivo = $oCommit->getTagArquivo();
+
         $sMensagem = $oCommit->getMensagem();
         $sTipo     = $oCommit->getTipo();
         $sErro     = '<error>[x]</error>';
@@ -140,9 +143,34 @@ class PushCommand extends Command {
           }
         }
 
+        if ($oCommit->getComando() === Arquivo::COMANDO_ADICIONAR_TAG || $oCommit->getComando() === Arquivo::COMANDO_COMMITAR_TAGGEAR) {
+
+          $aProjetosTagArquivo = $this->getApplication()->getConfig('tag')->tag_arquivo;
+          $aProjetosTagMensagem = $this->getApplication()->getConfig('tag')->tag_mensagem;
+          $sProjeto = $this->getApplication()->getModel()->getProjeto()->name; 
+
+          if (in_array($sProjeto, $aProjetosTagArquivo)) {
+            if (empty($iTagArquivo)) {
+
+              $this->aMensagemErro[$sArquivo][] = "Tag do arquivo não informada";
+              $iTagArquivo = $sErro;
+              $iErros++; 
+            }
+          }
+
+          if (in_array($sProjeto, $aProjetosTagMensagem)) {
+            if (empty($iTagMensagem)) {
+
+              $this->aMensagemErro[$sArquivo][] = "Tag da mensagem não informada";
+              $iTagMensagem = $sErro;
+              $iErros++; 
+            }
+          }
+        }
+
         $this->validarConteudoArquivo($oCommit->getArquivo());
 
-        $oTabela->addRow(array($sArquivo, $iTag, $sMensagem, $sTipo));
+        $oTabela->addRow(array($sArquivo, $iTagArquivo, $iTagMensagem, $sMensagem, $sTipo));
       }
 
     /**
@@ -228,8 +256,9 @@ class PushCommand extends Command {
 
           if ( $oCommit->getTipo() == 'ADD' ) {
 
-            $sComandoAdd = $this->addArquivo($oCommit)    . " 2> /tmp/cvsgit_last_error";
-            exec( $sComandoAdd, $aRetornoComandoAdd, $iStatusComandoAdd );
+            $oComandoAdd = $this->getApplication()->execute($this->addArquivo($oCommit));
+            $aRetornoComandoAdd = $oComandoAdd->output;
+            $iStatusComandoAdd = $oComandoAdd->code;
 
             if ( $iStatusComandoAdd > 0 ) {
 
@@ -240,8 +269,9 @@ class PushCommand extends Command {
             $aComandosExecutados[] = 'Adicionado';
           }
 
-          $sComandoCommit = $this->commitArquivo($oCommit) . " 2> /tmp/cvsgit_last_error";
-          exec( $sComandoCommit, $aRetornoComandoCommit, $iStatusComandoCommit );
+          $oComandoCommit = $this->getApplication()->execute($this->commitArquivo($oCommit));
+          $aRetornoComandoCommit = $oComandoCommit->output;
+          $iStatusComandoCommit = $oComandoCommit->code;
 
           if ( $iStatusComandoCommit > 0 ) {
 
@@ -254,8 +284,9 @@ class PushCommand extends Command {
 
         if ( $oCommit->getComando() === Arquivo::COMANDO_COMMITAR_TAGGEAR || $oCommit->getComando() === Arquivo::COMANDO_ADICIONAR_TAG || $oCommit->getComando() === Arquivo::COMANDO_REMOVER_TAG ) {
 
-          $sComandoTag = $this->tagArquivo($oCommit)    . " 2> /tmp/cvsgit_last_error";
-          exec( $sComandoTag, $aRetornoComandoTag, $iStatusComandoTag );
+          $oComandoTag = $this->getApplication()->execute($this->commitArquivo($oCommit));
+          $aRetornoComandoTag = $oComandoTag->output;
+          $iStatusComandoTag = $oComandoTag->code;
 
           if ( $iStatusComandoTag > 0 ) {
 
