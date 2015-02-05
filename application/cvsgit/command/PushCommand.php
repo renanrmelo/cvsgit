@@ -284,7 +284,7 @@ class PushCommand extends Command {
 
         if ( $oCommit->getComando() === Arquivo::COMANDO_COMMITAR_TAGGEAR || $oCommit->getComando() === Arquivo::COMANDO_ADICIONAR_TAG || $oCommit->getComando() === Arquivo::COMANDO_REMOVER_TAG ) {
 
-          $oComandoTag = $this->getApplication()->execute($this->commitArquivo($oCommit));
+          $oComandoTag = $this->getApplication()->execute($this->tagArquivo($oCommit));
           $aRetornoComandoTag = $oComandoTag->output;
           $iStatusComandoTag = $oComandoTag->code;
 
