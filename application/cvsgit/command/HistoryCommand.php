@@ -361,12 +361,14 @@ class HistoryCommand extends Command {
      * Comando cvs para buscar log de todos os arquivos 
      * - jogando erros para arquivo /tmp/cvsgit_last_error
      */
-    $sComandoLog = 'cvs log -S ' . $sDataBuscaHistorico . ' 2> /tmp/cvsgit_last_error';
+    $sComandoLog = 'cvs log -S ' . $sDataBuscaHistorico;
 
     /**
      * Lista somenta as tags
      */
-    exec($sComandoLog, $aRetornoComando, $iStatusComando);
+    $oComando = $this->getApplication()->execute($sComandoLog);
+    $aRetornoComando = $oComando->output;
+    $iStatusComando = $oComando->code;
 
     if ( $iStatusComando > 0 ) {
       throw new Exception( 'Erro ao execurar: ' . $sComandoLog . PHP_EOL . $this->getApplication()->getLastError() );

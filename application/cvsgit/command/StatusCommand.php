@@ -5,6 +5,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Exception;
 
 /**
  * StatusCommand
@@ -242,16 +243,19 @@ class StatusCommand extends Command {
      */
     if ( $lPesquisaCvs ) {
 
-      exec('cvs -qn update -dR 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
+      $oComando = $this->getApplication()->execute('cvs -qn update -dR');
+      $aRetornoComandoUpdate = $oComando->output;
+      $iStatusComandoUpdate = $oComando->code;
 
       /**
        * Verificação mair que 1 pois quando existem merge cvs retorna status 1
        * - e merge nao é erro, e sim aviso 
        */
       if ( $iStatusComandoUpdate > 1 ) {
-
-        $oOutput->writeln('<error>Erro nº ' . $iStatusComandoUpdate. ' ao execurar cvs -qn update -dR:' . "\n" . $this->getApplication()->getLastError() . '</error>');
-        return $iStatusComandoUpdate;
+        throw new Exception(
+          'Erro nº ' . $iStatusComandoUpdate. ' ao execurar cvs -qn update -dR:' . "\n" .
+          $this->getApplication()->getLastError()
+        );
       }
     }
 
