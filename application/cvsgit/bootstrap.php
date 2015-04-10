@@ -14,6 +14,7 @@ require_once APPLICATION_DIR . 'cvsgit/command/HistoryCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/WhatChangedCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/AnnotateCommand.php';
 require_once APPLICATION_DIR . 'cvsgit/command/DieCommand.php';
+require_once APPLICATION_DIR . 'cvsgit/command/CheckoutCommand.php';
 
 require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
 require_once APPLICATION_DIR . 'cvsgit/model/ArquivoModel.php';
@@ -47,6 +48,7 @@ try {
     new \CVS\WhatChangedCommand(),
     new \CVS\AnnotateCommand(),
     new \CVS\DieCommand(),
+    new \CVS\CheckoutCommand(),
   ));
 
   /**
