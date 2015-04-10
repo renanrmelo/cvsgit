@@ -234,7 +234,7 @@ class BuscarCommand extends Command {
 
         $oMenu = $oBanco->select("SELECT caminho FROM menu WHERE id = $iMenu");
 
-        $oOutput->write("\n - $oMenu->caminho");
+        $oOutput->write("\n - $iMenu: $oMenu->caminho");
 
         if ( !$lExibirOrigemMenu ) {
           continue;
