@@ -88,10 +88,11 @@ class DiffCommand extends Command {
       /**
        * Lista informacoes do commit, sem as tags
        */
-      exec('cvs log -N ' . escapeshellarg($sArquivo) . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
+      $oComando = $this->getApplication()->execute('cvs log -N ' . escapeshellarg($sArquivo));
+      $aRetornoComandoInformacoes = $oComando->output;
+      $iStatusComandoInformacoes = $oComando->code;
 
       if ( $iStatusComandoInformacoes > 0 ) {
-
         throw new Exception(
           "Erro ao execurar cvs log -N " . escapeshellarg($sArquivo) . PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoInformacoes
         );
@@ -136,13 +137,14 @@ class DiffCommand extends Command {
     /**
      * Checkout - Primeira versao 
      */
-    exec(sprintf($sComandoCheckout, $nPrimeiraVersao), $aRetornoCheckout, $iStatusCheckout);
+    $oComando = $this->getApplication()->execute(sprintf($sComandoCheckout, $nPrimeiraVersao));
+    $aRetornoCheckout = $oComando->output;
+    $iStatusCheckout = $oComando->code;
 
     /**
      * Erro - Primeira versao 
      */
     if ( $iStatusCheckout > 0 ) {
-
       throw new Exception(
         'Erro ao executar checkout da versão "' . $nPrimeiraVersao . '"' . PHP_EOL . $this->getApplication()->getLastError(),
         $iStatusCheckout
@@ -153,7 +155,9 @@ class DiffCommand extends Command {
      * Mover primeria versao
      * - mover arquivo da primeira versao para diretorio temporario
      */
-    exec(sprintf($sComandoMover . ' 2> /tmp/cvsgit_last_error', $nPrimeiraVersao), $aRetornoMover, $iStatusMover);
+    $oComando = $this->getApplication()->execute(sprintf($sComandoMover, $nPrimeiraVersao));
+    $aRetornoMover = $oComando->output;
+    $iStatusMover = $oComando->code;
 
     if ( $iStatusMover > 0 ) {
       throw new Exception('Erro ao executar: ' . sprintf($sComandoMover, $nPrimeiraVersao), $iStatusMover);

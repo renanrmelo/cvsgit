@@ -34,7 +34,9 @@ class PullCommand extends Command {
 
     $oOutput->write("baixando atualizações...\r");
 
-    exec('cvs update -dRP 2> /tmp/cvsgit_last_error', $aRetornoComandoUpdate, $iStatusComandoUpdate);
+    $oComando = $this->getApplication()->execute('cvs update -dRP');
+    $aRetornoComandoUpdate = $oComando->output;
+    $iStatusComandoUpdate = $oComando->code;
 
     /**
      * Caso CVS encontre conflito, retorna erro 1
@@ -62,10 +64,12 @@ class PullCommand extends Command {
       $sComandoRoot = "echo '{$sSenhaRoot}' | sudo -S ";
     }
 
-    exec($sComandoRoot . 'chmod 777 -R ' . getcwd() . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoPermissoes, $iStatusComandoPermissoes);
+    $oComando = $this->getApplication()->execute($sComandoRoot . 'chmod 777 -R ' . getcwd());
+    $aRetornoComandoPermissoes = $oComando->output;
+    $iStatusComandoPermissoes = $oComando->code;
 
     if ( $iStatusComandoPermissoes > 0 ) {
-      throw new Exception("Erro ao atualizar permissões dos arquivos, verifique arquivo de log");
+      throw new Exception("Erro ao atualizar permissões dos arquivos, configura a senha do root: cvsgit config -e");
     }
 
   }

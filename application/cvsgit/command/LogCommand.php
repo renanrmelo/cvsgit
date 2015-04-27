@@ -39,7 +39,9 @@ class LogCommand extends Command {
     /**
      * Lista somenta as tags
      */
-    exec('cvs log -h ' . escapeshellarg($sArquivo) . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoTags, $iStatusComandoTags);
+    $oComando = $this->getApplication()->execute('cvs log -h ' . escapeshellarg($sArquivo));
+    $aRetornoComandoTags = $oComando->output;
+    $iStatusComandoTags = $oComando->code;
 
     if ( $iStatusComandoTags > 0 ) {
       throw new Exception('Erro ao execurar cvs log -h ' . escapeshellarg($sArquivo) . PHP_EOL . $this->getApplication()->getLastError(), $iStatusComandoTags);
@@ -84,10 +86,11 @@ class LogCommand extends Command {
     /**
      * Lista informacoes do commit, sem as tags
      */
-    exec('cvs log -N ' . escapeshellarg($sArquivo) . ' 2> /tmp/cvsgit_last_error', $aRetornoComandoInformacoes, $iStatusComandoInformacoes);
+    $oComando = $this->getApplication()->execute('cvs log -N ' . escapeshellarg($sArquivo));
+    $aRetornoComandoInformacoes = $oComando->output;
+    $iStatusComandoInformacoes = $oComando->code;
 
     if ( $iStatusComandoInformacoes > 0 ) {
-
       throw new Exception(
         'Erro ao execurar cvs log -N ' . escapeshellarg($sArquivo) . PHP_EOL . $this->getApplication()->getLastError(), 
         $iStatusComandoInformacoes

@@ -14,6 +14,18 @@
   "tag" : { 
 
     /**
+     * Projetos obrigados usar tag na mensagem de commit
+     * @var Array
+     */
+    "tag_mensagem" : ["dbportal_prj"],
+
+    /**
+     * Projetos obrigados taggear arquivo
+     * @var Array
+     */
+    "tag_arquivo" : ["dbportal_prj"],
+
+    /**
      * Preixo da tag por projeto
      * @var Object
      */
