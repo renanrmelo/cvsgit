@@ -68,7 +68,7 @@ class CVSApplication extends Application {
       throw new \Exception($lastError);
     }
     return (object) array('code' => $code, 'output' => $output);
-  } 
+  }
 
   /**
    * Less
@@ -104,25 +104,40 @@ class CVSApplication extends Application {
    * @return string
    */
   public function getErrorCvs() {
-    
+
     $sMsgErro = "";
     if (  $this->getConfig('mostraErroCvs') ) {
       $sMsgErro .= "\n - Erro cvs: \n{$this->getLastError()} ";
     }
     return $sMsgErro;
   }
-  
+
   /**
    * Exibe uma string de erro
    * @param string $sMensagem mensagem a ser exibida
    * @param ConsoleOutput $oOutput instancia de ConsoleOutput
    */
   public function displayError( $sMensagem, ConsoleOutput $oOutput ) {
-    
+
     $sMsgErro  = "<error> - {$sMensagem}";
     $sMsgErro .= $this->getErrorCvs();
     $sMsgErro .= "</error>";
     $oOutput->writeln($sMsgErro);
   }
-  
+
+  public function glob($pattern='*', $flags = 0, $path='', $recursive = false) {
+
+    $files = glob($path . $pattern, $flags);
+    if (!$recursive) {
+      return $files;
+    }
+
+    $paths = glob($path . '*', GLOB_MARK|GLOB_ONLYDIR|GLOB_NOSORT|$flags);
+    foreach ($paths as $path) {
+      $files = array_merge($files, $this->glob($pattern, $flags, $path, $recursive));
+    }
+
+    return $files;
+  }
+
 }
