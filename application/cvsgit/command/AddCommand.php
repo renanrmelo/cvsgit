@@ -30,6 +30,7 @@ class AddCommand extends Command {
     $this->addOption('enhanced', 'e', InputOption::VALUE_NONE, 'Tipo de commit: Melhoria' );
     $this->addOption('fixed',    'f', InputOption::VALUE_NONE, 'Tipo de commit: Correção de bug' );
     $this->addOption('style',    's', InputOption::VALUE_NONE, 'Tipo de commit: Modificações estéticas no fonte' );
+    $this->addOption('force',    'F', InputOption::VALUE_NONE, 'Força o commit do fonte, ignorando encode' );
 
     $this->setHelp('Adiciona e configura arquivos para enviar ao repositório CVS.');
   }
@@ -41,8 +42,29 @@ class AddCommand extends Command {
 
     $this->oArquivoModel = new ArquivoModel();
 
-    $this->aArquivos = $this->oArquivoModel->getAdicionados(); 
-    $this->processarArquivos();
+    $this->aArquivos = $this->oArquivoModel->getAdicionados();
+
+    $lExisteArquivoInvalido = false;
+
+    /**
+     * Procura os arquivos para adicionar e valida o Encode quando existir no config
+     */
+    foreach( $this->oInput->getArgument('arquivos') as $sArquivo ) {
+
+      if ( !file_exists($sArquivo) ) {
+        continue;
+      }
+
+      if ( is_dir($sArquivo) ) {
+        continue;
+      }
+
+      $lExisteArquivoInvalido = $this->validaEncodeArquivos($sArquivo);
+    }
+
+    if ($lExisteArquivoInvalido === false || ($lExisteArquivoInvalido && ((int)$this->oInput->getOption('force')))) {
+      $this->processarArquivos();
+    }
   }
 
   public function processarArquivos() {
@@ -170,12 +192,35 @@ class AddCommand extends Command {
       } else {
         $this->oOutput->writeln(sprintf($sMensagem, 'atualizado', $this->getApplication()->clearPath($sArquivo)));
       }
-
     }
 
     if ( !empty($this->aArquivos) ) {
       $this->oArquivoModel->salvarAdicionados($this->aArquivos);
     }
+  }
+
+  public function validaEncodeArquivos($sArquivo) {
+
+    $lEncodeInvalido           = false;
+    $sArquivoAdicionado        = $this->getApplication()->clearPath($sArquivo);
+    $sCharsetArquivo           = preg_replace("/.*charset=(.*)/i", "$1", exec('file -i '.$sArquivoAdicionado));
+    $sCharsetArquivoAdicionado = str_replace("-", "", $sCharsetArquivo);
+    $sMensagemArquivoInvalido  = '<error>Encode inválido: %s. %s</error>';
+
+    if ((int)$this->getApplication()->getConfig('encodeArquivo')) {
+      $aEncodeSuportados         = $this->getApplication()->getConfig('encodeArquivo');
+
+      if ( !in_array($sCharsetArquivoAdicionado, $aEncodeSuportados) && (!(int)$this->oInput->getOption('force')) ) {
+        $this->oOutput->writeln(sprintf($sMensagemArquivoInvalido, $sCharsetArquivo, $sArquivoAdicionado));
+        $lEncodeInvalido = true;
+      }
+    }
+
+    if ($lEncodeInvalido) {
+      return true;
+    }
+
+    return false;
   }
 
 }

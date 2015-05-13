@@ -127,6 +127,16 @@
    * 
    * @var string
    */
-  "mostraErroCvs" : true
+  "mostraErroCvs" : true,
+
+  /**
+   * -------------------------------------------
+   * Encode dos Arquivos
+   * -------------------------------------------
+   * Codificacao dos fontes do projeto, não use hifen -
+   *
+   * @var array | string
+   */
+  "encodeArquivo" : ["usascii", "iso88591"]
     
 }

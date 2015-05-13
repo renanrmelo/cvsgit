@@ -158,7 +158,7 @@ class PushCommand extends Command {
             }
           }
 
-          if (in_array($sProjeto, $aProjetosTagMensagem)) {
+          if ($oCommit->getComando() === Arquivo::COMANDO_COMMITAR_TAGGEAR && in_array($sProjeto, $aProjetosTagMensagem)) {
             if (empty($iTagMensagem)) {
 
               $this->aMensagemErro[$sArquivo][] = "Tag da mensagem não informada";
