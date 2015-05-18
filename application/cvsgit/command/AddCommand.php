@@ -26,11 +26,12 @@ class AddCommand extends Command {
     $this->addOption('tag',        't', InputOption::VALUE_REQUIRED, 'Tag' );
     $this->addOption('tag-commit', 'T', InputOption::VALUE_REQUIRED, 'Usa mesma tag nos comandos commit e tag' );
 
-    $this->addOption('added',    'a', InputOption::VALUE_NONE, 'Tipo de commit: Adicionar arquivo' );
-    $this->addOption('enhanced', 'e', InputOption::VALUE_NONE, 'Tipo de commit: Melhoria' );
-    $this->addOption('fixed',    'f', InputOption::VALUE_NONE, 'Tipo de commit: Correção de bug' );
-    $this->addOption('style',    's', InputOption::VALUE_NONE, 'Tipo de commit: Modificações estéticas no fonte' );
-    $this->addOption('force',    'F', InputOption::VALUE_NONE, 'Força o commit do fonte, ignorando encode' );
+    $this->addOption('added',          'a', InputOption::VALUE_NONE, 'Tipo de commit: Adicionar arquivo' );
+    $this->addOption('enhanced',       'e', InputOption::VALUE_NONE, 'Tipo de commit: Melhoria' );
+    $this->addOption('fixed',          'f', InputOption::VALUE_NONE, 'Tipo de commit: Correção de bug' );
+    $this->addOption('style',          's', InputOption::VALUE_NONE, 'Tipo de commit: Modificações estéticas no fonte' );
+    $this->addOption('force',          'F', InputOption::VALUE_NONE, 'Força o commit do fonte, ignorando encode' );
+    $this->addOption('force-syntax',   'S', InputOption::VALUE_NONE, 'Força o commit do fonte, sem verificar syntax' );    
 
     $this->setHelp('Adiciona e configura arquivos para enviar ao repositório CVS.');
   }
@@ -44,10 +45,11 @@ class AddCommand extends Command {
 
     $this->aArquivos = $this->oArquivoModel->getAdicionados();
 
-    $lExisteArquivoInvalido = false;
+    $lExisteArquivoInvalido        = true;
+    $lExisteArquivoSintaxeInvalida = true;
 
     /**
-     * Procura os arquivos para adicionar e valida o Encode quando existir no config
+     * Procura os arquivos para adicionar
      */
     foreach( $this->oInput->getArgument('arquivos') as $sArquivo ) {
 
@@ -59,11 +61,26 @@ class AddCommand extends Command {
         continue;
       }
 
-      $lExisteArquivoInvalido = $this->validaEncodeArquivos($sArquivo);
+      /**
+       * Valida o Encode quando existir no config
+       */
+      if($this->validaEncodeArquivos($sArquivo) === false) {
+        $lExisteArquivoInvalido = false;
+      }
+
+      /**
+       * Valida erros de sintaxe no arquivo
+       */
+      if($this->validaSintaxeArquivos($sArquivo) === false) {
+        $lExisteArquivoSintaxeInvalida = false;
+      }
     }
 
-    if ($lExisteArquivoInvalido === false || ($lExisteArquivoInvalido && ((int)$this->oInput->getOption('force')))) {
-      $this->processarArquivos();
+    if ($lExisteArquivoInvalido || ($lExisteArquivoInvalido === false && ((int)$this->oInput->getOption('force')))) {
+
+      if ($lExisteArquivoSintaxeInvalida || ($lExisteArquivoSintaxeInvalida === false && ((int)$this->oInput->getOption('force-syntax')))) {
+        $this->processarArquivos();
+      }
     }
   }
 
@@ -199,6 +216,11 @@ class AddCommand extends Command {
     }
   }
 
+  /**
+   * Valida encoding nos arquivos a comitar
+   * @param  String $sArquivo
+   * @return Boolean
+   */
   public function validaEncodeArquivos($sArquivo) {
 
     $lEncodeInvalido           = false;
@@ -212,15 +234,44 @@ class AddCommand extends Command {
 
       if ( !in_array($sCharsetArquivoAdicionado, $aEncodeSuportados) && (!(int)$this->oInput->getOption('force')) ) {
         $this->oOutput->writeln(sprintf($sMensagemArquivoInvalido, $sCharsetArquivo, $sArquivoAdicionado));
-        $lEncodeInvalido = true;
+        return false;
       }
     }
 
-    if ($lEncodeInvalido) {
-      return true;
-    }
-
-    return false;
+    return true;
   }
 
+  /**
+   * Valida erros de sintaxe nos arquivos a comitar
+   * @param  String $sArquivo
+   * @return Boolean
+   */
+  public function validaSintaxeArquivos($sArquivo) {
+
+    $sExtensaoArquivo          = preg_replace("/([^ ]*)(\.)([\d\w]*)$/m", "$3", $sArquivo);
+    $sNomeArquivo              = preg_replace("/([^ ]*)(\.)([\d\w]*)$/m", "$1", $sArquivo);
+    $sMensagemArquivoInvalido  = "<error>Erro de sintaxe no arquivo: %s</error>";
+
+    if ((int)$this->getApplication()->getConfig('acceptSyntax')) {
+      
+      $aSintaxesSuportadas         = $this->getApplication()->getConfig('acceptSyntax');
+
+      if ( in_array($sExtensaoArquivo, $aSintaxesSuportadas) && (!(int)$this->oInput->getOption('force-syntax')) ) {
+
+        switch ($sExtensaoArquivo) {
+    
+          case "php":
+
+              $sMensagemValidacaoSintaxe = preg_replace("/(.*)( ". $sArquivo .")/m", "$1", exec("php -l ".$sArquivo));
+              if(strpos(strtolower($sMensagemValidacaoSintaxe), "no syntax errors")) {
+                $this->oOutput->writeln(sprintf($sMensagemArquivoInvalido, $sArquivo));
+                return false;
+              }
+            break;
+        }
+      }
+    }
+
+    return true;
+  }
 }
