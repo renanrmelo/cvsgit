@@ -137,6 +137,15 @@
    *
    * @var array | string
    */
-  "encodeArquivo" : ["usascii", "iso88591"]
+  "encodeArquivo" : ["usascii", "iso88591"],
+
+  /**
+   * -------------------------------------------
+   * Extensão dos arquivos a validar sintaxe
+   * -------------------------------------------
+   *
+   * @var array | string
+   */
+  "acceptSyntax" : ["php"]
     
 }
