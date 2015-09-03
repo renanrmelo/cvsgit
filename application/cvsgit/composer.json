@@ -1,0 +1,13 @@
+{
+    "name": "jefersonbelmiro/cvsgit",
+    "description": "Melhora a vida dos usuários do CVS",
+    "require-dev": {
+        "symfony/var-dumper": "^2.7"
+    },
+    "license": "MIT",
+    "authors": [
+        { "name": "Jeferson Belmiro", "email": "jeferson.belmiro@gmail.com" },
+        { "name": "Rafael Nery", "email": "rafanery0@gmail.com" }
+    ],
+    "require": {}
+}
