@@ -1,7 +1,7 @@
 <?php
-namespace CVS;
+namespace CVS\Model;
 
-class Arquivo {
+class ArquivoSitema {
 
   const COMANDO_COMMITAR_TAGGEAR    = 0;
   const COMANDO_ADICIONAR_TAG       = 1;

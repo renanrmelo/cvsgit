@@ -1,9 +1,9 @@
 <?php
-namespace CVS;
+namespace CVS\Model;
 
 use Exception, FileDataBase;
 
-class CvsGitModel {
+class CVSGit {
 
   protected static $oDataBase;
   protected static $oProjeto;

@@ -1,12 +1,9 @@
 <?php
-namespace CVS;
+namespace CVS\Model;
 
 use Exception;
 
-require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
-require_once APPLICATION_DIR . 'cvsgit/model/Arquivo.php';
-
-class ArquivoModel extends CvsGitModel {
+class Arquivo extends CVSGit {
 
   /**
    * Retorna arquivos adicionados para commit

@@ -1,11 +1,11 @@
 <?php
 namespace CVS;
 
-use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Config, FileDataBase, Exception;
 
-class CVSApplication extends Application {
+class Application extends BaseApplication {
 
   const VERSION = '1.1';
 

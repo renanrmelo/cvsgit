@@ -1,9 +1,9 @@
 <?php
-namespace CVS;
+namespace CVS\Model;
 
 require_once APPLICATION_DIR . 'cvsgit/model/CvsGitModel.php';
 
-class PushModel extends CvsGitModel {
+class Push extends CVSGit {
 
   private $aArquivos;
   private $sTitulo;
